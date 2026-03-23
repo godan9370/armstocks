@@ -564,14 +564,17 @@ def background_loop():
         except Exception as e:
             print(f"  [BG] error: {e}")
 
+# ─────────────────────────── STARTUP (runs for both gunicorn and direct) ───────
+market = init_market()
+threading.Thread(target=background_loop, daemon=True).start()
+
 # ─────────────────────────── MAIN ─────────────────────────────
 if __name__ == "__main__":
-    market = init_market()
-    t = threading.Thread(target=background_loop, daemon=True)
-    t.start()
-
     import socket
-    host = socket.gethostbyname(socket.gethostname())
+    try:
+        host = socket.gethostbyname(socket.gethostname())
+    except Exception:
+        host = "localhost"
     print()
     print("  ╔══════════════════════════════════════╗")
     print("  ║   @RM!2T0CKS  —  EXCHANGE IS LIVE   ║")
