@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>@RM!2T0CKS — THE EXCHANGE</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:     #07071a;
+  --bg2:    #0d0d2b;
+  --pink:   #ff0090;
+  --cyan:   #00f5ff;
+  --yellow: #ffe600;
+  --green:  #00ff88;
+  --red:    #ff2255;
+  --purple: #cc00ff;
+  --orange: #ff8800;
+  --text:   #d0d0ff;
+  --dim:    #4040aa;
+  --font:   'VT323', 'Share Tech Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text);
+  font-family: var(--font); overflow-x: hidden; font-size: 18px; }
+
+/* ── SCANLINES ── */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px,
+    rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
+}
+
+/* ── NEON UTILS ── */
+.neon-pink  { color:var(--pink);   text-shadow:0 0 8px var(--pink),  0 0 20px var(--pink); }
+.neon-cyan  { color:var(--cyan);   text-shadow:0 0 8px var(--cyan),  0 0 20px var(--cyan); }
+.neon-green { color:var(--green);  text-shadow:0 0 6px var(--green); }
+.neon-red   { color:var(--red);    text-shadow:0 0 6px var(--red); }
+.neon-yellow{ color:var(--yellow); text-shadow:0 0 6px var(--yellow); }
+.neon-orange{ color:var(--orange); text-shadow:0 0 6px var(--orange); }
+
+.box {
+  border:1px solid var(--cyan);
+  box-shadow:0 0 10px rgba(0,245,255,.25), inset 0 0 15px rgba(0,0,0,.6);
+  background: rgba(0,245,255,.03);
+}
+.box-pink {
+  border:1px solid var(--pink);
+  box-shadow:0 0 10px rgba(255,0,144,.3), inset 0 0 15px rgba(0,0,0,.6);
+  background: rgba(255,0,144,.04);
+}
+.box-orange {
+  border:1px solid var(--orange);
+  box-shadow:0 0 10px rgba(255,136,0,.3), inset 0 0 15px rgba(0,0,0,.6);
+  background: rgba(255,136,0,.04);
+}
+
+/* ── HEADER ── */
+header {
+  position: sticky; top:0; z-index:100;
+  background: rgba(7,7,26,.95); backdrop-filter:blur(4px);
+  border-bottom:2px solid var(--pink);
+  box-shadow:0 2px 20px rgba(255,0,144,.4);
+}
+.header-top {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 20px;
+}
+.logo {
+  font-size:2.2rem; letter-spacing:.12em;
+  color:var(--pink); text-shadow:0 0 15px var(--pink), 0 0 40px var(--pink);
+  animation:pulse 3s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.85} }
+
+.user-bar { display:flex; gap:16px; align-items:center; font-size:1rem; }
+.bucks-badge {
+  padding:4px 14px; border-radius:4px;
+  border:1px solid var(--yellow);
+  box-shadow:0 0 8px rgba(255,230,0,.4);
+  color:var(--yellow); font-size:1.1rem;
+}
+.phase-badge {
+  padding:4px 12px; border-radius:4px; font-size:.9rem; letter-spacing:.08em;
+}
+.phase-ipo     { border:1px solid var(--purple); color:var(--purple);
+                 box-shadow:0 0 8px rgba(204,0,255,.4); }
+.phase-trading { border:1px solid var(--green);  color:var(--green);
+                 box-shadow:0 0 8px rgba(0,255,136,.4); }
+
+/* ── TICKER TAPE ── */
+.ticker-tape {
+  background:rgba(0,0,0,.5); border-top:1px solid var(--yellow);
+  overflow:hidden; white-space:nowrap; padding:4px 0; font-size:.95rem;
+}
+.ticker-inner { display:inline-block; animation:scroll-left 60s linear infinite; }
+@keyframes scroll-left {
+  0%  { transform:translateX(100vw); }
+  100%{ transform:translateX(-100%); }
+}
+.tick-item { display:inline-block; margin:0 28px; }
+.tick-up   { color:var(--green); }
+.tick-dn   { color:var(--red); }
+
+/* ── NAV ── */
+nav {
+  display:flex; gap:0; border-bottom:1px solid var(--dim);
+  background:rgba(7,7,26,.9);
+}
+nav button {
+  flex:1; padding:10px 0; background:none; border:none; border-right:1px solid var(--dim);
+  color:var(--dim); font-family:var(--font); font-size:1rem; cursor:pointer;
+  letter-spacing:.08em; transition:all .2s;
+}
+nav button:last-child { border-right:none; }
+nav button:hover { color:var(--cyan); background:rgba(0,245,255,.05);
+  box-shadow:inset 0 -2px 0 var(--cyan); }
+nav button.active { color:var(--pink); background:rgba(255,0,144,.06);
+  box-shadow:inset 0 -2px 0 var(--pink); }
+
+/* ── VIEWS ── */
+.view { display:none; padding:20px; min-height:calc(100vh - 150px); }
+.view.active { display:block; }
+
+/* ── MARKET GRID ── */
+.market-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));
+  gap:16px;
+}
+.stock-card {
+  border:1px solid var(--dim); border-radius:6px;
+  background:rgba(0,245,255,.03); cursor:pointer;
+  transition:all .2s; overflow:hidden; position:relative;
+  box-shadow:0 0 8px rgba(0,245,255,.1);
+}
+.stock-card:hover {
+  border-color:var(--pink); transform:translateY(-3px);
+  box-shadow:0 0 18px rgba(255,0,144,.5);
+}
+.stock-card img {
+  width:100%; aspect-ratio:1; object-fit:cover; display:block;
+  filter:saturate(.7) contrast(1.1);
+  transition:filter .2s;
+}
+.stock-card:hover img { filter:saturate(1.3) contrast(1.1) drop-shadow(0 0 6px var(--pink)); }
+.card-body { padding:10px; }
+.card-ticker { font-size:1.3rem; color:var(--cyan);
+  text-shadow:0 0 6px var(--cyan); letter-spacing:.1em; }
+.card-name { font-size:.8rem; color:var(--dim); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.card-price { font-size:1.5rem; margin-top:4px; }
+.card-chg { font-size:.95rem; margin-top:2px; }
+.card-vol  { font-size:.75rem; color:var(--dim); margin-top:2px; }
+.sparkline-canvas { width:100%!important; height:40px!important; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,20,.85); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal-box {
+  width:min(680px,95vw); max-height:90vh; overflow-y:auto;
+  border-radius:8px; padding:28px;
+}
+.modal-close {
+  float:right; background:none; border:none; color:var(--pink);
+  font-family:var(--font); font-size:1.8rem; cursor:pointer; line-height:1;
+}
+.modal-close:hover { text-shadow:0 0 12px var(--pink); }
+
+/* Stock detail modal */
+.sd-header { display:flex; gap:20px; align-items:flex-start; margin-bottom:20px; }
+.sd-headshot { width:110px; height:110px; object-fit:cover; border:2px solid var(--cyan);
+  box-shadow:0 0 12px rgba(0,245,255,.4); flex-shrink:0; }
+.sd-info h2 { font-size:2rem; color:var(--pink);
+  text-shadow:0 0 12px var(--pink); letter-spacing:.1em; }
+.sd-info .sd-name { color:var(--dim); font-size:.95rem; }
+.sd-info .sd-price { font-size:2.2rem; margin-top:6px; }
+.sd-info .sd-chg   { font-size:1rem; }
+
+.chart-wrap { position:relative; height:200px; margin:16px 0; }
+
+/* Trade controls */
+.trade-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.trade-row input[type=number] {
+  width:90px; padding:8px 10px; background:rgba(0,0,30,.8);
+  border:1px solid var(--cyan); color:var(--cyan); font-family:var(--font);
+  font-size:1.2rem; text-align:center; border-radius:4px;
+  box-shadow:0 0 6px rgba(0,245,255,.3);
+}
+.trade-row input:focus { outline:none; border-color:var(--pink);
+  box-shadow:0 0 10px rgba(255,0,144,.4); }
+.btn {
+  padding:8px 22px; border:none; border-radius:4px; font-family:var(--font);
+  font-size:1.1rem; cursor:pointer; letter-spacing:.06em; transition:all .2s;
+}
+.btn-buy  { background:rgba(0,255,136,.15); border:1px solid var(--green); color:var(--green); }
+.btn-buy:hover  { background:rgba(0,255,136,.3); box-shadow:0 0 12px var(--green); }
+.btn-sell { background:rgba(255,34,85,.15);  border:1px solid var(--red);   color:var(--red);   }
+.btn-sell:hover { background:rgba(255,34,85,.3);  box-shadow:0 0 12px var(--red); }
+.btn-admin{ background:rgba(204,0,255,.15); border:1px solid var(--purple); color:var(--purple); }
+.btn-admin:hover{ background:rgba(204,0,255,.3); box-shadow:0 0 12px var(--purple); }
+.btn-yellow{ background:rgba(255,230,0,.15); border:1px solid var(--yellow); color:var(--yellow); }
+.btn-yellow:hover{ background:rgba(255,230,0,.3); box-shadow:0 0 12px var(--yellow); }
+.btn-orange{ background:rgba(255,136,0,.15); border:1px solid var(--orange); color:var(--orange); }
+.btn-orange:hover{ background:rgba(255,136,0,.3); box-shadow:0 0 12px var(--orange); }
+.btn-sm { padding:5px 14px; font-size:.9rem; }
+
+.trade-msg { margin-top:8px; font-size:.95rem; min-height:1.2em; }
+
+/* ── LOGIN MODAL ── */
+#loginModal .modal-box {
+  max-width:420px; text-align:center;
+}
+#loginModal h1 { font-size:2.8rem; color:var(--pink);
+  text-shadow:0 0 15px var(--pink), 0 0 40px var(--pink); margin-bottom:6px; }
+#loginModal p  { color:var(--dim); margin-bottom:20px; font-size:1rem; }
+.big-input {
+  width:100%; padding:12px 16px; background:rgba(0,0,40,.8);
+  border:1px solid var(--cyan); border-radius:6px; color:var(--cyan);
+  font-family:var(--font); font-size:1.5rem; text-align:center;
+  box-shadow:0 0 10px rgba(0,245,255,.3); margin-bottom:16px;
+}
+.big-input:focus { outline:none; border-color:var(--pink);
+  box-shadow:0 0 14px rgba(255,0,144,.5); }
+.btn-enter {
+  width:100%; padding:14px; background:rgba(255,0,144,.18);
+  border:2px solid var(--pink); border-radius:6px; color:var(--pink);
+  font-family:var(--font); font-size:1.6rem; cursor:pointer; letter-spacing:.1em;
+  text-shadow:0 0 8px var(--pink); transition:all .2s;
+}
+.btn-enter:hover { background:rgba(255,0,144,.35); box-shadow:0 0 20px var(--pink); }
+.login-bucks { color:var(--yellow); font-size:1rem; margin-top:10px; }
+
+/* ── PORTFOLIO ── */
+.port-summary { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+.port-stat { flex:1; min-width:140px; padding:14px 18px; border-radius:6px; text-align:center; }
+.port-stat .label { font-size:.8rem; color:var(--dim); letter-spacing:.06em; }
+.port-stat .value { font-size:1.9rem; margin-top:4px; }
+
+.holdings-list { display:flex; flex-direction:column; gap:10px; }
+.holding-row {
+  display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:6px;
+  border:1px solid var(--dim); background:rgba(0,245,255,.03); cursor:pointer;
+  transition:border-color .2s;
+}
+.holding-row:hover { border-color:var(--pink); }
+.holding-row img { width:52px; height:52px; object-fit:cover;
+  border:1px solid var(--dim); border-radius:3px; }
+.holding-info { flex:1; }
+.holding-name { font-size:1.1rem; }
+.holding-shares { font-size:.85rem; color:var(--dim); }
+.holding-val { text-align:right; }
+.holding-price { font-size:1.2rem; }
+
+/* ── NEWS ── */
+.news-list { display:flex; flex-direction:column; gap:12px; }
+.news-item {
+  padding:14px 18px; border-radius:6px;
+  border-left:3px solid var(--cyan);
+  background:rgba(0,245,255,.04);
+}
+.news-ts      { font-size:.75rem; color:var(--dim); margin-bottom:4px; }
+.news-summary { font-size:1.1rem; color:var(--cyan); margin-bottom:6px; }
+.news-admin   { font-size:.9rem; color:var(--dim); }
+.news-impacts { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+.impact-badge {
+  padding:2px 10px; border-radius:20px; font-size:.85rem;
+  border:1px solid; letter-spacing:.05em;
+}
+
+/* ── LEADERBOARD ── */
+.lb-header { display:grid; grid-template-columns:40px 1fr 1fr 1fr 1fr;
+  gap:10px; padding:8px 16px; color:var(--dim); font-size:.85rem;
+  border-bottom:1px solid var(--dim); margin-bottom:4px; }
+.lb-row {
+  display:grid; grid-template-columns:40px 1fr 1fr 1fr 1fr;
+  gap:10px; align-items:center; padding:10px 16px; border-radius:6px;
+  margin-bottom:6px; border:1px solid transparent; transition:border-color .2s;
+}
+.lb-row:hover { border-color:var(--dim); }
+.lb-rank { color:var(--dim); font-size:1.2rem; }
+.lb-rank.gold   { color:var(--yellow); text-shadow:0 0 8px var(--yellow); }
+.lb-rank.silver { color:#b0b0cc; }
+.lb-rank.bronze { color:#cc7744; }
+.lb-user { font-size:1.1rem; }
+.lb-val  { font-size:1.1rem; text-align:right; }
+
+/* ── ADMIN ── */
+.admin-section { margin-bottom:28px; }
+.admin-section h3 { font-size:1.4rem; color:var(--purple); margin-bottom:14px;
+  text-shadow:0 0 8px var(--purple); border-bottom:1px solid rgba(204,0,255,.3);
+  padding-bottom:6px; }
+.admin-input {
+  width:100%; padding:10px 14px; background:rgba(0,0,40,.8);
+  border:1px solid var(--purple); border-radius:6px; color:var(--text);
+  font-family:var(--font); font-size:1.1rem; margin-bottom:10px;
+  box-shadow:0 0 8px rgba(204,0,255,.2);
+}
+.admin-input:focus { outline:none; border-color:var(--pink); }
+.admin-pw   { border-color:var(--dim)!important; }
+.event-log  { max-height:180px; overflow-y:auto; font-size:.9rem; }
+.event-log-item { padding:6px 0; border-bottom:1px solid rgba(255,255,255,.05);
+  color:var(--dim); }
+.event-log-item span { color:var(--text); }
+
+/* ── FUTURES ── */
+.futures-info-bar {
+  display:flex; gap:20px; flex-wrap:wrap; margin-bottom:24px;
+  padding:14px 20px; border-radius:6px;
+  border:1px solid var(--orange);
+  background:rgba(255,136,0,.05);
+  box-shadow:0 0 10px rgba(255,136,0,.2);
+}
+.futures-info-bar .fi { font-size:1rem; color:var(--dim); }
+.futures-info-bar .fi strong { color:var(--orange); }
+
+.futures-tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid var(--dim); }
+.futures-tab {
+  padding:8px 20px; background:none; border:none; border-bottom:2px solid transparent;
+  color:var(--dim); font-family:var(--font); font-size:1rem; cursor:pointer;
+  letter-spacing:.06em; transition:all .2s;
+}
+.futures-tab.active { color:var(--orange); border-bottom-color:var(--orange); }
+.futures-tab:hover  { color:var(--cyan); }
+
+.futures-market-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+  gap:14px;
+}
+.futures-card {
+  border:1px solid var(--dim); border-radius:6px;
+  background:rgba(255,136,0,.03); overflow:hidden;
+  transition:border-color .2s;
+}
+.futures-card:hover { border-color:var(--orange); }
+.futures-card-head {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  background:rgba(0,0,0,.3); border-bottom:1px solid var(--dim);
+}
+.futures-card-head img { width:40px; height:40px; object-fit:cover;
+  border-radius:3px; border:1px solid var(--dim); }
+.futures-card-ticker { font-size:1.2rem; color:var(--cyan); }
+.futures-card-name   { font-size:.75rem; color:var(--dim); }
+.futures-card-price  { font-size:.9rem; color:var(--text); margin-left:auto; }
+.futures-card-body   { padding:10px 12px; }
+.futures-dur-row     { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+.futures-dur-row label { font-size:.8rem; color:var(--dim); margin-bottom:4px; display:block; }
+.futures-btn-group { display:flex; gap:6px; }
+.btn-up   { background:rgba(0,255,136,.1);  border:1px solid var(--green);  color:var(--green);
+            padding:5px 12px; border-radius:4px; font-family:var(--font); font-size:.95rem;
+            cursor:pointer; transition:all .2s; }
+.btn-up:hover { background:rgba(0,255,136,.25); box-shadow:0 0 8px var(--green); }
+.btn-dn   { background:rgba(255,34,85,.1);   border:1px solid var(--red);    color:var(--red);
+            padding:5px 12px; border-radius:4px; font-family:var(--font); font-size:.95rem;
+            cursor:pointer; transition:all .2s; }
+.btn-dn:hover { background:rgba(255,34,85,.25); box-shadow:0 0 8px var(--red); }
+.futures-dur-selector { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+.dur-btn {
+  padding:4px 10px; border-radius:4px; font-family:var(--font); font-size:.85rem;
+  cursor:pointer; transition:all .2s;
+  background:rgba(255,136,0,.1); border:1px solid rgba(255,136,0,.3); color:var(--orange);
+}
+.dur-btn.selected { background:rgba(255,136,0,.3); border-color:var(--orange);
+  box-shadow:0 0 8px var(--orange); }
+
+/* Active contracts */
+.contracts-list { display:flex; flex-direction:column; gap:10px; }
+.contract-row {
+  display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:6px;
+  border:1px solid var(--dim); background:rgba(255,136,0,.03);
+}
+.contract-dir-up  { border-left:3px solid var(--green); }
+.contract-dir-dn  { border-left:3px solid var(--red); }
+.contract-won     { border-left:3px solid var(--green); background:rgba(0,255,136,.05); opacity:.8; }
+.contract-lost    { border-left:3px solid var(--red);   background:rgba(255,34,85,.05);  opacity:.8; }
+.contract-info { flex:1; }
+.contract-ticker { font-size:1.1rem; color:var(--cyan); }
+.contract-detail { font-size:.85rem; color:var(--dim); margin-top:2px; }
+.contract-status { text-align:right; font-size:1rem; }
+.countdown { font-size:1.2rem; color:var(--orange); font-variant-numeric:tabular-nums; }
+
+/* ── SECTION TITLE ── */
+.section-title { font-size:1.6rem; margin-bottom:18px; letter-spacing:.08em;
+  color:var(--cyan); text-shadow:0 0 8px var(--cyan); }
+
+/* ── EMPTY STATES ── */
+.empty-state { text-align:center; padding:60px 20px; color:var(--dim); font-size:1.1rem; }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+  padding:12px 28px; border-radius:6px; font-size:1.1rem; z-index:9000;
+  opacity:0; transition:opacity .3s; pointer-events:none;
+  border:1px solid var(--cyan); background:rgba(0,0,30,.95);
+  box-shadow:0 0 20px rgba(0,245,255,.5);
+  min-width:280px; text-align:center;
+}
+#toast.show { opacity:1; }
+#toast.err  { border-color:var(--red); box-shadow:0 0 20px rgba(255,34,85,.5); }
+#toast.win  { border-color:var(--green); box-shadow:0 0 20px rgba(0,255,136,.5); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--dim); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--cyan); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN MODAL ══════════════ -->
+<div class="modal-overlay open" id="loginModal">
+  <div class="modal-box box">
+    <h1>@RM!2T0CKS</h1>
+    <p>THE OFFICE STOCK EXCHANGE</p>
+    <input class="big-input" id="loginInput" type="text" placeholder="ENTER YOUR NAME"
+      maxlength="20" autocomplete="off" autofocus>
+    <button class="btn-enter" onclick="doLogin()">ENTER THE MARKET →</button>
+    <p class="login-bucks">★ You'll receive ₳10 ARM Bucks to start trading ★</p>
+  </div>
+</div>
+
+<!-- ══════════════ STOCK DETAIL MODAL ══════════════ -->
+<div class="modal-overlay" id="stockModal">
+  <div class="modal-box box" id="stockModalInner">
+    <button class="modal-close" onclick="closeStockModal()">✕</button>
+    <div id="stockModalContent"></div>
+  </div>
+</div>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header>
+  <div class="header-top">
+    <div class="logo">@RM!2T0CKS</div>
+    <div class="user-bar">
+      <span class="bucks-badge" id="bucksDisplay">₳ — ARM Bucks</span>
+      <span class="phase-badge" id="phaseBadge">···</span>
+      <span id="usernameDisplay" style="color:var(--dim);font-size:.9rem"></span>
+    </div>
+  </div>
+  <div class="ticker-tape">
+    <div class="ticker-inner" id="tickerInner">Loading market data…</div>
+  </div>
+</header>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav>
+  <button class="active" onclick="showView('market',this)">◈ MARKET</button>
+  <button onclick="showView('portfolio',this)">◉ PORTFOLIO</button>
+  <button onclick="showView('futures',this)">⚡ FUTURES</button>
+  <button onclick="showView('news',this)">📡 NEWS</button>
+  <button onclick="showView('leaderboard',this)">★ LEADERS</button>
+  <button onclick="showView('admin',this)">⚙ ADMIN</button>
+</nav>
+
+<!-- ══════════════ MARKET VIEW ══════════════ -->
+<div class="view active" id="view-market">
+  <div class="section-title">LIVE MARKET</div>
+  <div class="market-grid" id="marketGrid"></div>
+</div>
+
+<!-- ══════════════ PORTFOLIO VIEW ══════════════ -->
+<div class="view" id="view-portfolio">
+  <div class="section-title">MY PORTFOLIO</div>
+  <div class="port-summary" id="portSummary"></div>
+  <div class="holdings-list" id="holdingsList"></div>
+</div>
+
+<!-- ══════════════ FUTURES VIEW ══════════════ -->
+<div class="view" id="view-futures">
+  <div class="section-title" style="color:var(--orange);text-shadow:0 0 8px var(--orange)">⚡ FUTURES MARKET</div>
+
+  <div class="futures-info-bar">
+    <div class="fi">Cost per contract: <strong>₳1.00</strong></div>
+    <div class="fi">Payout if correct: <strong>₳1.80</strong> (profit ₳0.80)</div>
+    <div class="fi">Durations: <strong>30 min · 1 hr · 2 hr</strong></div>
+    <div class="fi" style="color:var(--dim);font-size:.85rem">Contracts settle automatically when time expires.</div>
+  </div>
+
+  <div class="futures-tabs">
+    <button class="futures-tab active" onclick="showFuturesTab('market',this)">PLACE CONTRACTS</button>
+    <button class="futures-tab" onclick="showFuturesTab('active',this)">ACTIVE <span id="activeCount"></span></button>
+    <button class="futures-tab" onclick="showFuturesTab('settled',this)">SETTLED</button>
+  </div>
+
+  <div id="futures-panel-market">
+    <div style="margin-bottom:14px">
+      <span style="color:var(--dim);font-size:.9rem">Duration: </span>
+      <div class="futures-dur-selector" style="display:inline-flex;margin-left:8px">
+        <button class="dur-btn selected" onclick="selectDuration(30,this)">30 MIN</button>
+        <button class="dur-btn" onclick="selectDuration(60,this)">1 HR</button>
+        <button class="dur-btn" onclick="selectDuration(120,this)">2 HR</button>
+      </div>
+    </div>
+    <div class="futures-market-grid" id="futuresMarketGrid"></div>
+  </div>
+
+  <div id="futures-panel-active" style="display:none">
+    <div class="contracts-list" id="activeContractsList"></div>
+  </div>
+
+  <div id="futures-panel-settled" style="display:none">
+    <div class="contracts-list" id="settledContractsList"></div>
+  </div>
+</div>
+
+<!-- ══════════════ NEWS VIEW ══════════════ -->
+<div class="view" id="view-news">
+  <div class="section-title">MARKET NEWS</div>
+  <div class="news-list" id="newsList"></div>
+</div>
+
+<!-- ══════════════ LEADERBOARD VIEW ══════════════ -->
+<div class="view" id="view-leaderboard">
+  <div class="section-title">LEADERBOARD</div>
+  <div id="leaderboardContainer"></div>
+</div>
+
+<!-- ══════════════ ADMIN VIEW ══════════════ -->
+<div class="view" id="view-admin">
+  <div class="section-title" style="color:var(--purple);text-shadow:0 0 8px var(--purple)">⚙ ADMIN PANEL</div>
+
+  <div class="admin-section">
+    <h3>🔐 Admin Password</h3>
+    <input class="admin-input admin-pw" id="adminPw" type="password" placeholder="Enter admin password">
+  </div>
+
+  <div class="admin-section">
+    <h3>⚡ Fire a Market Event</h3>
+    <input class="admin-input" id="eventInput" type="text"
+      placeholder="e.g.  Dan just closed the biggest deal in company history!">
+    <button class="btn btn-admin" onclick="fireEvent()">SEND TO MARKET</button>
+    <div id="eventResult" style="margin-top:10px;font-size:.95rem;"></div>
+  </div>
+
+  <div class="admin-section">
+    <h3>📅 Market Phase</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-yellow" onclick="setPhase('ipo')">SET IPO PHASE</button>
+      <button class="btn btn-buy"    onclick="setPhase('trading')">OPEN TRADING</button>
+    </div>
+    <div id="phaseResult" style="margin-top:10px;font-size:.95rem;"></div>
+  </div>
+
+  <div class="admin-section">
+    <h3>🗑 Reset Market</h3>
+    <p style="color:var(--dim);font-size:.9rem;margin-bottom:10px">
+      Wipes all trades, prices, and users. Start fresh.</p>
+    <button class="btn btn-sell" onclick="resetMarket()">RESET EVERYTHING</button>
+  </div>
+
+  <div class="admin-section">
+    <h3>📋 Recent Events</h3>
+    <div class="event-log" id="adminEventLog"></div>
+  </div>
+</div>
+
+<!-- ══════════════ TOAST ══════════════ -->
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+const S = {
+  userId:        null,
+  username:      null,
+  armBucks:      0,
+  market:        null,
+  portfolio:     null,
+  futures:       null,
+  chartInst:     null,
+  pollTimer:     null,
+  selectedDur:   30,
+  futuresTab:    'market',
+  countdownTimer: null,
+};
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const uid   = localStorage.getItem('uid');
+  const uname = localStorage.getItem('uname');
+  if (uid && uname) {
+    S.userId   = uid;
+    S.username = uname;
+    closeLogin();
+    startPolling();
+  }
+  document.getElementById('loginInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+// ════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════
+async function doLogin() {
+  const name = document.getElementById('loginInput').value.trim();
+  if (name.length < 2) { toast('Name must be ≥ 2 characters', 'err'); return; }
+  const res = await api('/api/register', 'POST', { username: name });
+  if (res.error) { toast(res.error, 'err'); return; }
+  S.userId   = res.user_id;
+  S.username = res.username;
+  S.armBucks = res.arm_bucks;
+  localStorage.setItem('uid',   S.userId);
+  localStorage.setItem('uname', S.username);
+  closeLogin();
+  startPolling();
+  toast(`WELCOME TO THE EXCHANGE, ${S.username.toUpperCase()}!`);
+}
+
+function closeLogin() {
+  document.getElementById('loginModal').classList.remove('open');
+}
+
+// ════════════════════════════════════════
+//  POLLING
+// ════════════════════════════════════════
+function startPolling() {
+  fetchMarket();
+  S.pollTimer = setInterval(fetchMarket, 5000);
+}
+
+async function fetchMarket() {
+  const data = await api('/api/market');
+  if (!data || data.error) return;
+  S.market = data;
+  updateHeader(data);
+  renderTicker(data);
+  const v = currentView();
+  if (v === 'market')      renderMarket(data);
+  if (v === 'news')        renderNews(data.recent_events);
+  if (v === 'portfolio')   await fetchPortfolio();
+  if (v === 'leaderboard') await fetchLeaderboard();
+  if (v === 'futures')     await fetchFutures();
+  if (v === 'admin')       updateAdminLog(data.recent_events);
+}
+
+async function fetchPortfolio() {
+  if (!S.userId) return;
+  const data = await api(`/api/portfolio?user_id=${S.userId}`);
+  if (!data || data.error) return;
+  S.portfolio = data;
+  S.armBucks  = data.arm_bucks;
+  renderPortfolio(data);
+  updateBucksDisplay();
+}
+
+async function fetchLeaderboard() {
+  const data = await api('/api/leaderboard');
+  if (!data) return;
+  renderLeaderboard(data);
+}
+
+async function fetchFutures() {
+  if (!S.userId) return;
+  const data = await api(`/api/futures/my-contracts?user_id=${S.userId}`);
+  if (!data || data.error) return;
+
+  // Check for newly won/lost contracts
+  if (S.futures) {
+    const prevActive = new Set((S.futures.active || []).map(c => c.id));
+    const nowSettled = (data.settled || []).filter(c => prevActive.has(c.id));
+    nowSettled.forEach(c => {
+      if (c.status === 'won') toast(`🎉 WON! ${c.ticker} ${c.direction} settled at ₳${c.settled_price} → +₳${c.payout}`, 'win');
+      else                   toast(`💀 LOST ${c.ticker} ${c.direction} contract. -₳${c.cost}`, 'err');
+    });
+    // Refresh arm bucks if any settled
+    if (nowSettled.length) {
+      const p = await api(`/api/portfolio?user_id=${S.userId}`);
+      if (p && !p.error) { S.armBucks = p.arm_bucks; updateBucksDisplay(); }
+    }
+  }
+
+  S.futures = data;
+  const activeCount = (data.active || []).length;
+  const el = document.getElementById('activeCount');
+  if (el) el.textContent = activeCount > 0 ? `(${activeCount})` : '';
+
+  if (S.futuresTab === 'market' && S.market) renderFuturesMarket(S.market);
+  if (S.futuresTab === 'active')  renderActiveContracts(data.active || []);
+  if (S.futuresTab === 'settled') renderSettledContracts(data.settled || []);
+}
+
+// ════════════════════════════════════════
+//  HEADER / TICKER
+// ════════════════════════════════════════
+function updateHeader(data) {
+  updateBucksDisplay();
+  document.getElementById('usernameDisplay').textContent = S.username
+    ? `[ ${S.username.toUpperCase()} ]` : '';
+  const pb = document.getElementById('phaseBadge');
+  if (data.phase === 'ipo') {
+    pb.textContent = '◆ IPO PHASE';
+    pb.className   = 'phase-badge phase-ipo';
+  } else {
+    pb.textContent = '● TRADING LIVE';
+    pb.className   = 'phase-badge phase-trading';
+  }
+}
+
+function updateBucksDisplay() {
+  document.getElementById('bucksDisplay').textContent =
+    `₳ ${S.armBucks.toFixed(2)} ARM Bucks`;
+}
+
+function renderTicker(data) {
+  const stocks = Object.values(data.stocks);
+  const html = stocks.map(s => {
+    const sign  = s.change_pct >= 0 ? '+' : '';
+    const cls   = s.change_pct >= 0 ? 'tick-up' : 'tick-dn';
+    const arrow = s.change_pct >= 0 ? '▲' : '▼';
+    return `<span class="tick-item">
+      <span style="color:var(--cyan)">${s.ticker}</span>
+      <span class="${cls}"> ${arrow} ₳${s.current_price.toFixed(2)} (${sign}${s.change_pct.toFixed(1)}%)</span>
+    </span>`;
+  }).join('');
+  document.getElementById('tickerInner').innerHTML = html + html;
+}
+
+// ════════════════════════════════════════
+//  MARKET VIEW
+// ════════════════════════════════════════
+function renderMarket(data) {
+  const grid = document.getElementById('marketGrid');
+  const stocks = Object.values(data.stocks).sort((a,b) => a.name.localeCompare(b.name));
+  grid.innerHTML = stocks.map(s => {
+    const pct   = s.change_pct;
+    const sign  = pct >= 0 ? '+' : '';
+    const pCls  = pct >= 0 ? 'neon-green' : 'neon-red';
+    const arrow = pct >= 0 ? '▲' : '▼';
+    return `
+    <div class="stock-card" onclick="openStockModal('${s.ticker}')">
+      <img src="/headshots/${encodeURIComponent(s.image)}" alt="${s.name}"
+        onerror="this.style.background='#1a1a3a';this.src=''">
+      <canvas class="sparkline-canvas" id="spark-${s.ticker}"></canvas>
+      <div class="card-body">
+        <div class="card-ticker">${s.ticker}</div>
+        <div class="card-name">${s.name}</div>
+        <div class="card-price">₳ ${s.current_price.toFixed(2)}</div>
+        <div class="card-chg ${pCls}">${arrow} ${sign}${pct.toFixed(2)}%</div>
+        <div class="card-vol">VOL: ${s.total_volume}</div>
+      </div>
+    </div>`;
+  }).join('');
+  requestAnimationFrame(() => {
+    stocks.forEach(s => drawSparkline(`spark-${s.ticker}`, s.sparkline, s.change_pct >= 0));
+  });
+}
+
+function drawSparkline(canvasId, prices, isUp) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !prices || prices.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.offsetWidth || 170;
+  const h = 40;
+  canvas.width  = w;
+  canvas.height = h;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const color = isUp ? '#00ff88' : '#ff2255';
+  ctx.clearRect(0, 0, w, h);
+  ctx.beginPath();
+  prices.forEach((p, i) => {
+    const x = (i / (prices.length - 1)) * w;
+    const y = h - ((p - min) / range) * (h - 6) - 3;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 1.5;
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = 4;
+  ctx.stroke();
+}
+
+// ════════════════════════════════════════
+//  STOCK DETAIL MODAL
+// ════════════════════════════════════════
+async function openStockModal(ticker) {
+  const data = await api(`/api/stock/${ticker}`);
+  if (!data || data.error) { toast('Failed to load stock', 'err'); return; }
+  const s = data;
+  const myShares = S.portfolio?.holdings?.find(h => h.ticker === ticker)?.shares ?? 0;
+  const pct      = ((s.current_price - s.ipo_price) / s.ipo_price * 100).toFixed(2);
+  const pCls     = parseFloat(pct) >= 0 ? 'neon-green' : 'neon-red';
+  const sign     = parseFloat(pct) >= 0 ? '+' : '';
+
+  document.getElementById('stockModalContent').innerHTML = `
+    <div class="sd-header">
+      <img class="sd-headshot" src="/headshots/${encodeURIComponent(s.image)}" alt="${s.name}"
+        onerror="this.style.background='#1a1a3a'">
+      <div class="sd-info">
+        <h2>${s.ticker}</h2>
+        <div class="sd-name">${s.name}</div>
+        <div class="sd-price">₳ ${s.current_price.toFixed(4)}</div>
+        <div class="sd-chg ${pCls}">${sign}${pct}% since IPO</div>
+        <div style="color:var(--dim);font-size:.85rem;margin-top:4px">
+          VOL: ${s.total_volume} &nbsp;|&nbsp;
+          Avail: ${s.shares_outstanding - s.shares_held} / ${s.shares_outstanding} shares
+          &nbsp;|&nbsp; You own: ${myShares}
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="stockChart"></canvas>
+    </div>
+    <div class="trade-row">
+      <input type="number" id="tradeShares" value="1" min="1" max="500">
+      <button class="btn btn-buy"  onclick="doTrade('${ticker}','buy')">BUY ▲</button>
+      <button class="btn btn-sell" onclick="doTrade('${ticker}','sell')">SELL ▼</button>
+    </div>
+    <div class="trade-msg" id="tradeMsg"></div>
+  `;
+
+  document.getElementById('stockModal').classList.add('open');
+
+  const labels = s.price_history.map(p => {
+    const d = new Date(p.ts);
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  });
+  const prices = s.price_history.map(p => p.price);
+  const colors = s.price_history.map(p =>
+    p.type === 'buy'   ? 'rgba(0,255,136,.8)'  :
+    p.type === 'sell'  ? 'rgba(255,34,85,.8)'  :
+    p.type === 'event' ? 'rgba(255,230,0,.8)'  : 'transparent');
+
+  if (S.chartInst) S.chartInst.destroy();
+  const ctx = document.getElementById('stockChart').getContext('2d');
+  S.chartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Price',
+        data: prices,
+        borderColor: '#00f5ff',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointBackgroundColor: colors,
+        pointBorderColor: colors,
+        fill: true,
+        backgroundColor: 'rgba(0,245,255,0.05)',
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0d0d2b',
+          borderColor: '#00f5ff',
+          borderWidth: 1,
+          titleColor: '#00f5ff',
+          bodyColor: '#d0d0ff',
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#4040aa', font:{size:10}, maxTicksLimit:8 },
+          grid: { color: 'rgba(64,64,170,.2)' } },
+        y: { ticks: { color: '#4040aa', callback: v => '₳'+v.toFixed(2) },
+          grid: { color: 'rgba(64,64,170,.2)' } }
+      }
+    }
+  });
+}
+
+function closeStockModal() {
+  document.getElementById('stockModal').classList.remove('open');
+  if (S.chartInst) { S.chartInst.destroy(); S.chartInst = null; }
+}
+document.getElementById('stockModal').addEventListener('click', function(e) {
+  if (e.target === this) closeStockModal();
+});
+
+// ════════════════════════════════════════
+//  TRADING
+// ════════════════════════════════════════
+async function doTrade(ticker, type) {
+  if (!S.userId) { toast('Please log in first', 'err'); return; }
+  const shares = parseInt(document.getElementById('tradeShares').value);
+  if (!shares || shares < 1) { toast('Invalid share count', 'err'); return; }
+  const endpoint = type === 'buy' ? '/api/buy' : '/api/sell';
+  const res = await api(endpoint, 'POST', { user_id: S.userId, ticker, shares });
+  const msg = document.getElementById('tradeMsg');
+  if (res.error) {
+    msg.className = 'trade-msg neon-red';
+    msg.textContent = '✕ ' + res.error;
+    return;
+  }
+  S.armBucks = res.arm_bucks;
+  updateBucksDisplay();
+  const verb = type === 'buy' ? 'Bought' : 'Sold';
+  msg.className = 'trade-msg neon-green';
+  msg.textContent = `✓ ${verb} ${shares} share${shares>1?'s':''} of ${ticker} @ ₳${res.new_price.toFixed(4)}`;
+  toast(`${verb} ${shares}× ${ticker}!`);
+  await fetchMarket();
+}
+
+// ════════════════════════════════════════
+//  PORTFOLIO VIEW
+// ════════════════════════════════════════
+function renderPortfolio(data) {
+  const portPct = data.total_value > 0
+    ? ((data.portfolio_value / data.total_value) * 100).toFixed(0) : 0;
+  const activeFut = data.active_futures || 0;
+
+  document.getElementById('portSummary').innerHTML = `
+    <div class="port-stat box">
+      <div class="label">CASH</div>
+      <div class="value neon-yellow">₳${data.arm_bucks.toFixed(2)}</div>
+    </div>
+    <div class="port-stat box">
+      <div class="label">STOCKS</div>
+      <div class="value neon-cyan">₳${data.portfolio_value.toFixed(2)}</div>
+    </div>
+    <div class="port-stat box-pink">
+      <div class="label">TOTAL NET WORTH</div>
+      <div class="value neon-pink">₳${data.total_value.toFixed(2)}</div>
+    </div>
+    <div class="port-stat box-orange">
+      <div class="label">ACTIVE FUTURES</div>
+      <div class="value neon-orange">${activeFut}</div>
+    </div>
+  `;
+
+  if (!data.holdings.length) {
+    document.getElementById('holdingsList').innerHTML =
+      '<div class="empty-state">No holdings yet. Hit the market and buy some stocks!</div>';
+    return;
+  }
+  document.getElementById('holdingsList').innerHTML = data.holdings.map(h => {
+    const cls  = h.change_pct >= 0 ? 'neon-green' : 'neon-red';
+    const sign = h.change_pct >= 0 ? '+' : '';
+    return `
+    <div class="holding-row" onclick="openStockModal('${h.ticker}')">
+      <img src="/headshots/${encodeURIComponent(h.image)}" alt="${h.name}"
+        onerror="this.style.background='#1a1a3a'">
+      <div class="holding-info">
+        <div class="holding-name">${h.ticker} &nbsp;<span style="color:var(--dim);font-size:.85rem">${h.name}</span></div>
+        <div class="holding-shares">${h.shares} shares @ ₳${h.current_price.toFixed(4)}</div>
+      </div>
+      <div class="holding-val">
+        <div class="holding-price neon-cyan">₳${h.value.toFixed(2)}</div>
+        <div class="${cls}">${sign}${h.change_pct.toFixed(2)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  FUTURES VIEW
+// ════════════════════════════════════════
+function selectDuration(mins, btn) {
+  S.selectedDur = mins;
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if (S.market) renderFuturesMarket(S.market);
+}
+
+function showFuturesTab(tab, btn) {
+  S.futuresTab = tab;
+  document.querySelectorAll('.futures-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('futures-panel-market').style.display  = tab === 'market'  ? '' : 'none';
+  document.getElementById('futures-panel-active').style.display  = tab === 'active'  ? '' : 'none';
+  document.getElementById('futures-panel-settled').style.display = tab === 'settled' ? '' : 'none';
+  if (S.futures) {
+    if (tab === 'market'  && S.market) renderFuturesMarket(S.market);
+    if (tab === 'active')  renderActiveContracts(S.futures.active  || []);
+    if (tab === 'settled') renderSettledContracts(S.futures.settled || []);
+  }
+}
+
+function renderFuturesMarket(data) {
+  const grid = document.getElementById('futuresMarketGrid');
+  if (!grid) return;
+  const stocks = Object.values(data.stocks).sort((a,b) => a.name.localeCompare(b.name));
+  grid.innerHTML = stocks.map(s => {
+    const pct  = s.change_pct;
+    const pCls = pct >= 0 ? 'neon-green' : 'neon-red';
+    const sign = pct >= 0 ? '+' : '';
+    return `
+    <div class="futures-card">
+      <div class="futures-card-head">
+        <img src="/headshots/${encodeURIComponent(s.image)}" alt="${s.name}"
+          onerror="this.style.background='#1a1a3a'">
+        <div>
+          <div class="futures-card-ticker">${s.ticker}</div>
+          <div class="futures-card-name">${s.name}</div>
+        </div>
+        <div class="futures-card-price ${pCls}">₳${s.current_price.toFixed(2)}<br>
+          <span style="font-size:.7rem">${sign}${pct.toFixed(1)}%</span>
+        </div>
+      </div>
+      <div class="futures-card-body">
+        <div style="font-size:.8rem;color:var(--dim);margin-bottom:6px">Will it be higher or lower in ${S.selectedDur >= 60 ? (S.selectedDur/60)+'hr' : S.selectedDur+'min'}?</div>
+        <div class="futures-btn-group">
+          <button class="btn-up" onclick="buyFuture('${s.ticker}','UP')">▲ UP</button>
+          <button class="btn-dn" onclick="buyFuture('${s.ticker}','DOWN')">▼ DOWN</button>
+        </div>
+        <div style="font-size:.75rem;color:var(--dim);margin-top:6px">₳1.00 → win ₳1.80</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function buyFuture(ticker, direction) {
+  if (!S.userId) { toast('Please log in first', 'err'); return; }
+  const res = await api('/api/futures/buy', 'POST', {
+    user_id: S.userId,
+    ticker,
+    direction,
+    duration_minutes: S.selectedDur,
+  });
+  if (res.error) { toast(res.error, 'err'); return; }
+  S.armBucks = res.arm_bucks;
+  updateBucksDisplay();
+  const durLabel = S.selectedDur >= 60 ? `${S.selectedDur/60}hr` : `${S.selectedDur}min`;
+  toast(`📋 ${ticker} ${direction} contract placed (${durLabel})`);
+  await fetchFutures();
+}
+
+function renderActiveContracts(contracts) {
+  const el = document.getElementById('activeContractsList');
+  if (!contracts.length) {
+    el.innerHTML = '<div class="empty-state">No active contracts. Go to PLACE CONTRACTS to get started!</div>';
+    return;
+  }
+  el.innerHTML = contracts.map(c => {
+    const dirCls = c.direction === 'UP' ? 'contract-dir-up' : 'contract-dir-dn';
+    const dirClr = c.direction === 'UP' ? 'var(--green)' : 'var(--red)';
+    const mins   = Math.floor(c.seconds_left / 60);
+    const secs   = c.seconds_left % 60;
+    const countdown = c.seconds_left > 0
+      ? `${mins}:${String(secs).padStart(2,'0')}`
+      : 'SETTLING…';
+    const movePct = c.current_price
+      ? ((c.current_price - c.entry_price) / c.entry_price * 100).toFixed(1)
+      : '?';
+    const durLabel = c.duration_min >= 60 ? `${c.duration_min/60}hr` : `${c.duration_min}min`;
+    return `
+    <div class="contract-row ${dirCls}">
+      <div class="contract-info">
+        <div class="contract-ticker">
+          ${c.ticker} &nbsp;
+          <span style="color:${dirClr};font-size:1.1rem">${c.direction === 'UP' ? '▲ UP' : '▼ DOWN'}</span>
+          &nbsp;<span style="color:var(--dim);font-size:.8rem">${durLabel}</span>
+        </div>
+        <div class="contract-detail">
+          Entry: ₳${c.entry_price} &nbsp;|&nbsp; Now: ₳${c.current_price ?? '…'}
+          &nbsp;|&nbsp; Move: <span style="color:${parseFloat(movePct)>=0?'var(--green)':'var(--red)'}">${movePct}%</span>
+        </div>
+      </div>
+      <div class="contract-status">
+        <div class="countdown">${countdown}</div>
+        <div style="font-size:.75rem;color:var(--dim)">to settle</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSettledContracts(contracts) {
+  const el = document.getElementById('settledContractsList');
+  if (!contracts.length) {
+    el.innerHTML = '<div class="empty-state">No settled contracts yet.</div>';
+    return;
+  }
+  el.innerHTML = contracts.map(c => {
+    const won    = c.status === 'won';
+    const rowCls = won ? 'contract-won' : 'contract-lost';
+    const result = won
+      ? `<span class="neon-green">✓ WON  +₳${c.payout.toFixed(2)}</span>`
+      : `<span class="neon-red">✕ LOST  -₳${c.cost.toFixed(2)}</span>`;
+    const dirClr = c.direction === 'UP' ? 'var(--green)' : 'var(--red)';
+    const durLabel = c.duration_min >= 60 ? `${c.duration_min/60}hr` : `${c.duration_min}min`;
+    const ts = c.settled_at ? new Date(c.settled_at).toLocaleTimeString() : '';
+    return `
+    <div class="contract-row ${rowCls}">
+      <div class="contract-info">
+        <div class="contract-ticker">
+          ${c.ticker} &nbsp;
+          <span style="color:${dirClr}">${c.direction === 'UP' ? '▲ UP' : '▼ DOWN'}</span>
+          &nbsp;<span style="color:var(--dim);font-size:.8rem">${durLabel}</span>
+        </div>
+        <div class="contract-detail">
+          Entry: ₳${c.entry_price} &nbsp;→&nbsp; Settled: ₳${c.settled_price ?? '?'}
+          &nbsp;|&nbsp; ${ts}
+        </div>
+      </div>
+      <div class="contract-status">${result}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  NEWS VIEW
+// ════════════════════════════════════════
+function renderNews(events) {
+  if (!events || !events.length) {
+    document.getElementById('newsList').innerHTML =
+      '<div class="empty-state">No market events yet. Admin can fire one from the ⚙ panel.</div>';
+    return;
+  }
+  const reversed = [...events].reverse();
+  document.getElementById('newsList').innerHTML = reversed.map(ev => {
+    const ts = new Date(ev.ts).toLocaleString();
+    const impactHtml = Object.entries(ev.impacts || {}).map(([t, pct]) => {
+      const cls = pct >= 0 ? 'var(--green)' : 'var(--red)';
+      const sign = pct >= 0 ? '+' : '';
+      return `<span class="impact-badge" style="border-color:${cls};color:${cls}">
+        ${t} ${sign}${pct.toFixed(1)}%</span>`;
+    }).join('');
+    return `
+    <div class="news-item">
+      <div class="news-ts">${ts}</div>
+      <div class="news-summary">⚡ ${ev.summary}</div>
+      <div class="news-admin">Admin: "${ev.admin_text}"</div>
+      <div class="news-impacts">${impactHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  LEADERBOARD VIEW
+// ════════════════════════════════════════
+function renderLeaderboard(rows) {
+  if (!rows.length) {
+    document.getElementById('leaderboardContainer').innerHTML =
+      '<div class="empty-state">No traders yet.</div>';
+    return;
+  }
+  const rankCls = ['gold','silver','bronze'];
+  const medals  = ['🥇','🥈','🥉'];
+  let html = `
+    <div class="lb-header">
+      <div>#</div><div>TRADER</div><div style="text-align:right">CASH</div>
+      <div style="text-align:right">STOCKS</div><div style="text-align:right">NET WORTH</div>
+    </div>`;
+  html += rows.map((r, i) => {
+    const rank = i < 3 ? `<span class="lb-rank ${rankCls[i]}">${medals[i]}</span>`
+                       : `<span class="lb-rank">${i+1}</span>`;
+    const style = i === 0 ? 'background:rgba(255,230,0,.06);border-color:rgba(255,230,0,.2)' :
+                  i === 1 ? 'background:rgba(180,180,200,.04);border-color:rgba(180,180,200,.2)' :
+                  i === 2 ? 'background:rgba(200,120,60,.04);border-color:rgba(200,120,60,.2)' : '';
+    return `
+    <div class="lb-row" style="${style}">
+      ${rank}
+      <div class="lb-user">${r.username}</div>
+      <div class="lb-val neon-yellow">₳${r.arm_bucks.toFixed(2)}</div>
+      <div class="lb-val neon-cyan">₳${r.portfolio_value.toFixed(2)}</div>
+      <div class="lb-val neon-pink">₳${r.total.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('leaderboardContainer').innerHTML = html;
+}
+
+// ════════════════════════════════════════
+//  ADMIN
+// ════════════════════════════════════════
+async function fireEvent() {
+  const pw   = document.getElementById('adminPw').value;
+  const text = document.getElementById('eventInput').value.trim();
+  if (!pw)   { toast('Enter admin password first', 'err'); return; }
+  if (!text) { toast('Enter event text first', 'err'); return; }
+  document.getElementById('eventResult').textContent = '⏳ Interpreting event…';
+  const res = await api('/api/admin/event', 'POST', { password: pw, event_text: text });
+  if (res.error) {
+    document.getElementById('eventResult').innerHTML = `<span class="neon-red">✕ ${res.error}</span>`;
+    return;
+  }
+  document.getElementById('eventResult').innerHTML =
+    `<span class="neon-green">✓ Event fired: ${res.event.summary}</span>`;
+  document.getElementById('eventInput').value = '';
+  toast('⚡ MARKET EVENT FIRED!');
+  fetchMarket();
+}
+
+async function setPhase(phase) {
+  const pw = document.getElementById('adminPw').value;
+  if (!pw) { toast('Enter admin password first', 'err'); return; }
+  const res = await api('/api/admin/phase', 'POST', { password: pw, phase });
+  if (res.error) {
+    document.getElementById('phaseResult').innerHTML = `<span class="neon-red">✕ ${res.error}</span>`;
+  } else {
+    document.getElementById('phaseResult').innerHTML =
+      `<span class="neon-green">✓ Phase set to: ${phase.toUpperCase()}</span>`;
+    toast(`Phase → ${phase.toUpperCase()}`);
+    fetchMarket();
+  }
+}
+
+async function resetMarket() {
+  const pw = document.getElementById('adminPw').value;
+  if (!pw) { toast('Enter admin password first', 'err'); return; }
+  if (!confirm('RESET EVERYTHING? This will wipe all trades, prices, and users.')) return;
+  const res = await api('/api/admin/reset', 'POST', { password: pw });
+  if (res.error) {
+    toast(res.error, 'err');
+  } else {
+    toast('Market reset!');
+    localStorage.removeItem('uid');
+    localStorage.removeItem('uname');
+    location.reload();
+  }
+}
+
+function updateAdminLog(events) {
+  const log = document.getElementById('adminEventLog');
+  if (!log) return;
+  if (!events || !events.length) { log.innerHTML = '<div class="event-log-item">No events yet.</div>'; return; }
+  log.innerHTML = [...events].reverse().slice(0,10).map(ev => {
+    const ts = new Date(ev.ts).toLocaleTimeString();
+    return `<div class="event-log-item">[${ts}] <span>${ev.summary}</span></div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  VIEW SWITCHING
+// ════════════════════════════════════════
+function currentView() {
+  const v = document.querySelector('.view.active');
+  return v ? v.id.replace('view-','') : 'market';
+}
+
+function showView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  if (name === 'market'      && S.market) renderMarket(S.market);
+  if (name === 'portfolio')              fetchPortfolio();
+  if (name === 'futures')                fetchFutures();
+  if (name === 'news'        && S.market) renderNews(S.market.recent_events);
+  if (name === 'leaderboard')            fetchLeaderboard();
+  if (name === 'admin'       && S.market) updateAdminLog(S.market.recent_events);
+}
+
+// ════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════
+async function api(path, method='GET', body=null) {
+  try {
+    const opts = { method, headers: {'Content-Type':'application/json'} };
+    if (body) opts.body = JSON.stringify(body);
+    const res  = await fetch(path, opts);
+    return await res.json();
+  } catch(e) {
+    console.error(e);
+    return { error: 'Network error' };
+  }
+}
+
+let toastTimer;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = 'show' + (type ? ' '+type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3500);
+}
+</script>
+</body>
+</html>
