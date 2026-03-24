@@ -1414,53 +1414,14 @@ def radio_debug():
 
 @app.route("/api/radio")
 def get_radio():
-    """Fetch tracks from the configured Spotify playlist."""
+    """Return the configured Spotify playlist URL for frontend embedding."""
     with lock:
         playlist_url = market.get("radio_playlist", "")
     if not playlist_url:
-        return jsonify({"error": "no_playlist", "tracks": []})
-    # Extract playlist ID from URL
+        return jsonify({"error": "no_playlist", "playlist_url": ""})
     pid = playlist_url.strip().split("/")[-1].split("?")[0]
-    token = _get_spotify_token()
-    if not token:
-        return jsonify({"error": "no_spotify_credentials", "tracks": []})
-    try:
-        tracks_out = []
-        first_resp_debug = None
-        url = f"https://api.spotify.com/v1/playlists/{pid}/tracks?limit=50"
-        headers = {"Authorization": f"Bearer {token}"}
-        while url and len(tracks_out) < 200:
-            resp = http_requests.get(url, headers=headers, timeout=8)
-            data = resp.json()
-            if first_resp_debug is None:
-                # Capture first response status + top-level keys for debugging
-                first_resp_debug = {
-                    "status_code": resp.status_code,
-                    "keys": list(data.keys()),
-                    "total": data.get("total"),
-                    "items_count": len(data.get("items", [])),
-                    "error": data.get("error"),
-                }
-            if resp.status_code != 200:
-                return jsonify({"error": f"Spotify API error {resp.status_code}", "detail": data, "tracks": []})
-            for item in data.get("items", []):
-                t = item.get("track")
-                if not t: continue
-                tracks_out.append({
-                    "name":        t.get("name", ""),
-                    "artist":      ", ".join(a["name"] for a in t.get("artists", [])),
-                    "album":       t.get("album", {}).get("name", ""),
-                    "image":       (t.get("album", {}).get("images") or [{}])[0].get("url", ""),
-                    "preview_url": t.get("preview_url"),
-                    "spotify_url": t.get("external_urls", {}).get("spotify", ""),
-                    "duration_ms": t.get("duration_ms", 0),
-                })
-            url = data.get("next")
-        if not tracks_out:
-            return jsonify({"tracks": [], "playlist_url": playlist_url, "debug": first_resp_debug})
-        return jsonify({"tracks": tracks_out, "playlist_url": playlist_url})
-    except Exception as e:
-        return jsonify({"error": str(e), "tracks": []})
+    embed_url = f"https://open.spotify.com/embed/playlist/{pid}?utm_source=generator&theme=0"
+    return jsonify({"playlist_url": playlist_url, "embed_url": embed_url, "pid": pid})
 
 @app.route("/api/admin/radio/set-playlist", methods=["POST"])
 def admin_set_playlist():

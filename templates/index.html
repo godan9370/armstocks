@@ -2642,40 +2642,23 @@ async function fetchRadio() {
   el.innerHTML = '<div class="radio-empty">⟳ Loading playlist…</div>';
   const r = await fetch('/api/radio');
   const d = await r.json();
-  if (d.error === 'no_playlist') {
+  if (d.error === 'no_playlist' || !d.embed_url) {
     el.innerHTML = `<div class="radio-empty"><div style="font-size:2rem;margin-bottom:12px">🎵</div>No playlist configured.<div style="margin-top:6px;font-size:.85rem">Admin can set a Spotify playlist in ⚙ ADMIN.</div></div>`;
     return;
   }
-  if (d.error === 'no_spotify_credentials') {
-    el.innerHTML = `<div class="radio-empty"><div style="font-size:2rem;margin-bottom:12px">🔑</div>Spotify credentials not set.<div style="margin-top:6px;font-size:.85rem">Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET as environment variables on Render.</div></div>`;
-    return;
-  }
-  if (!d.tracks || !d.tracks.length) {
-    const dbg = d.debug ? `<pre style="font-size:.75rem;color:var(--dim);margin-top:12px;text-align:left;overflow:auto;max-width:500px;margin-left:auto;margin-right:auto">${JSON.stringify(d.debug, null, 2)}</pre>` : '';
-    el.innerHTML = `<div class="radio-empty">Playlist is empty or couldn't be loaded.${d.error ? `<br><span style="color:#ff4466;margin-top:6px;display:block">${d.error}</span>` : ''}${dbg}</div>`;
-    return;
-  }
-  const ms2min = ms => `${Math.floor(ms/60000)}:${String(Math.floor((ms%60000)/1000)).padStart(2,'0')}`;
   el.innerHTML = `
-    <div class="radio-header">
-      <div class="radio-now-playing">
-        <div style="color:var(--dim);font-size:.85rem;margin-bottom:4px">PLAYLIST</div>
-        <a href="${d.playlist_url}" target="_blank" style="color:var(--green);font-size:1rem">Open in Spotify ↗</a>
-      </div>
-      <div style="color:var(--dim);font-size:.85rem">${d.tracks.length} tracks</div>
-    </div>
-    <div class="radio-track-list">
-      ${d.tracks.map((t,i) => `
-        <div class="radio-track">
-          <div class="radio-track-num">${i+1}</div>
-          ${t.image ? `<img class="radio-track-img" src="${t.image}" alt="">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,.05);border-radius:4px;flex-shrink:0"></div>'}
-          <div class="radio-track-info">
-            <div class="radio-track-name">${t.name}</div>
-            <div class="radio-track-artist">${t.artist}</div>
-          </div>
-          <div class="radio-track-dur">${ms2min(t.duration_ms)}</div>
-          ${t.spotify_url ? `<a class="radio-track-link" href="${t.spotify_url}" target="_blank">▶</a>` : ''}
-        </div>`).join('')}
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px 0">
+      <iframe
+        src="${d.embed_url}"
+        width="100%" height="480"
+        style="max-width:700px;border-radius:12px;border:none"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy">
+      </iframe>
+      <a href="${d.playlist_url}" target="_blank"
+         style="color:var(--green);font-size:.9rem;text-decoration:none">
+        ↗ Open full playlist in Spotify
+      </a>
     </div>`;
 }
 
