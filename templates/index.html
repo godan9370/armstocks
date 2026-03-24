@@ -2651,7 +2651,8 @@ async function fetchRadio() {
     return;
   }
   if (!d.tracks || !d.tracks.length) {
-    el.innerHTML = `<div class="radio-empty">Playlist is empty or couldn't be loaded.</div>`;
+    const dbg = d.debug ? `<pre style="font-size:.75rem;color:var(--dim);margin-top:12px;text-align:left;overflow:auto;max-width:500px;margin-left:auto;margin-right:auto">${JSON.stringify(d.debug, null, 2)}</pre>` : '';
+    el.innerHTML = `<div class="radio-empty">Playlist is empty or couldn't be loaded.${d.error ? `<br><span style="color:#ff4466;margin-top:6px;display:block">${d.error}</span>` : ''}${dbg}</div>`;
     return;
   }
   const ms2min = ms => `${Math.floor(ms/60000)}:${String(Math.floor((ms%60000)/1000)).padStart(2,'0')}`;
