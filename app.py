@@ -1407,7 +1407,7 @@ def get_radio():
         return jsonify({"error": "no_spotify_credentials", "tracks": []})
     try:
         tracks_out = []
-        url = f"https://api.spotify.com/v1/playlists/{pid}/tracks?limit=50&fields=items(track(name,artists,album(name,images),external_urls,preview_url,duration_ms))"
+        url = f"https://api.spotify.com/v1/playlists/{pid}/tracks?limit=50"
         headers = {"Authorization": f"Bearer {token}"}
         while url and len(tracks_out) < 200:
             resp = http_requests.get(url, headers=headers, timeout=8)
