@@ -899,12 +899,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
     </div>
   </div>
 
-  <!-- Shiny Market -->
-  <div id="shinyMarketSection" style="display:none">
-    <div class="section-title" style="font-size:1.3rem;color:var(--yellow)">✦ SHINY MARKET</div>
-    <p style="color:var(--dim);font-size:.9rem;margin-bottom:16px">Shinies only enter the market when someone first pulls one from a pack. Buy & sell at current base price × multiplier.</p>
-    <div class="shiny-mkt-grid" id="shinyMktGrid"></div>
-  </div>
+  <!-- Shiny cards trade exclusively in the 💎 RESALE tab -->
 </div>
 
 <!-- CHARTS -->
@@ -1116,7 +1111,7 @@ function startPolling() {
   setInterval(fetchMarket, 8000);
   setInterval(fetchPredictions, 10000);
   setInterval(fetchPortfolio, 12000);
-  setInterval(fetchShinies, 15000);
+  // shiny market interval removed — shinies traded via resale tab only
   if (countdownInterval) clearInterval(countdownInterval);
   countdownInterval = setInterval(tickCountdowns, 1000);
 }
@@ -1316,7 +1311,7 @@ async function fetchPortfolio() {
         <div class="holding-val">
           <div class="holding-price" style="color:${col}">₳${h.value.toFixed(2)}</div>
           <div style="font-size:.75rem;color:var(--dim)">@ ₳${h.price.toFixed(4)} ea</div>
-          <button class="btn btn-sell btn-xs" style="margin-top:4px" onclick="sellShinyFromPortfolio('${h.shiny_key}',${h.qty})">SELL</button>
+          <button class="btn btn-yellow btn-xs" style="margin-top:4px" onclick="showView('resale',null)">💎 LIST FOR SALE</button>
         </div>
       </div>`;
     }).join('');
@@ -1782,7 +1777,6 @@ async function buyPack() {
     packCards = d.cards;
     packRevealedCount = 0;
     showPackOpenOverlay(d.cards);
-    fetchShinies();
   } catch(e) { toast('Network error','err'); }
   btn.disabled = false;
   btn.textContent = '◈ TEAR IT OPEN ◈';
@@ -1918,21 +1912,20 @@ function showPackSummary() {
 function closePackOverlay() {
   document.getElementById('packOpenOverlay').classList.remove('open');
   fetchPortfolio();
-  fetchShinies();
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  SHINY MARKET
+//  SHINY MARKET (removed — use 💎 RESALE tab)
 // ═══════════════════════════════════════════════════════════════
-async function fetchShinies() {
+// fetchShinies / buyShiny / sellShiny removed.
+// Shiny cards are only obtainable via packs/wheel and traded via the Resale Market.
+async function _shinyMarketStub() {
   if (!userId) return;
   const r = await fetch(`/api/marketplace/shinies?user_id=${userId}`);
   const shinies = await r.json();
   if (!shinies.length) {
-    document.getElementById('shinyMarketSection').style.display = 'none';
     return;
   }
-  document.getElementById('shinyMarketSection').style.display = '';
   const grid = document.getElementById('shinyMktGrid');
   grid.innerHTML = shinies.map(s => `
     <div class="shiny-mkt-card tier-${s.tier}">
@@ -1946,37 +1939,12 @@ async function fetchShinies() {
         <div class="shiny-mkt-price">₳${s.current_price.toFixed(2)}</div>
         <div class="shiny-mkt-owned">Owned: ${s.owned}</div>
         <div class="shiny-mkt-btns">
-          <button class="btn btn-buy btn-xs" onclick="buyShiny('${s.shiny_key}')">BUY</button>
-          ${s.owned>0?`<button class="btn btn-sell btn-xs" onclick="sellShiny('${s.shiny_key}')">SELL</button>`:''}
+          <button class="btn btn-yellow btn-xs" onclick="showView('resale',null)">💎 RESALE</button>
         </div>
       </div>
     </div>`).join('');
 }
-
-async function buyShiny(shinyKey) {
-  const r = await fetch('/api/marketplace/buy_shiny',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({user_id:userId,shiny_key:shinyKey,qty:1})});
-  const d = await r.json();
-  if (d.error) { toast(d.error,'err'); return; }
-  armBucks = d.arm_bucks; updateBucksDisplay();
-  toast(`Bought shiny for ₳${d.cost.toFixed(2)}`);
-  fetchShinies(); fetchPortfolio();
-}
-
-async function sellShiny(shinyKey) {
-  const r = await fetch('/api/marketplace/sell_shiny',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({user_id:userId,shiny_key:shinyKey,qty:1})});
-  const d = await r.json();
-  if (d.error) { toast(d.error,'err'); return; }
-  armBucks = d.arm_bucks; updateBucksDisplay();
-  toast(`Sold shiny for ₳${d.proceeds.toFixed(2)}`);
-  fetchShinies(); fetchPortfolio();
-}
-
-async function sellShinyFromPortfolio(shinyKey, owned) {
-  if (!confirm(`Sell 1 shiny card?`)) return;
-  await sellShiny(shinyKey);
-}
+// buyShiny / sellShiny / sellShinyFromPortfolio removed — use 💎 RESALE tab
 
 // ═══════════════════════════════════════════════════════════════
 //  NEWS
@@ -2179,7 +2147,7 @@ function showView(name, btn) {
   if (name === 'futures')    { fetchContracts(); renderFuturesMarket(); }
   if (name === 'predictions'){ fetchPredictions(); }
   if (name === 'leaderboard') fetchLeaderboard();
-  if (name === 'shop')       { fetchShinies(); }
+  if (name === 'shop')       { /* no pre-fetch needed */ }
   if (name === 'charts')     { fetchAndRenderChart(); }
   if (name === 'funds')      { fetchFunds(); }
   if (name === 'admin')      { loadRecentEvents(); }

@@ -1045,77 +1045,9 @@ def get_shinies():
         out.sort(key=lambda x: (["PLATINUM","GOLD","SILVER","BRONZE"].index(x["tier"]), x["name"]))
         return jsonify(out)
 
-@app.route("/api/marketplace/buy_shiny", methods=["POST"])
-def buy_shiny():
-    """Buy a shiny stock from the market at current base × multiplier price."""
-    body      = request.json or {}
-    uid       = body.get("user_id", "")
-    shiny_key = body.get("shiny_key", "")
-    qty       = max(1, int(body.get("qty", 1)))
-
-    with lock:
-        u = market["users"].get(uid)
-        if not u: return jsonify({"error": "User not found"}), 404
-        _ensure_user_fields(u)
-
-        info = market.get("shiny_registry", {}).get(shiny_key)
-        if not info: return jsonify({"error": "Shiny type not found (pull from a pack first)"}), 404
-
-        base = market["stocks"].get(info["base_ticker"])
-        if not base: return jsonify({"error": "Base stock not found"}), 404
-
-        price      = round(base["current_price"] * info["multiplier"], 4)
-        total_cost = round(price * qty, 4)
-
-        if u["arm_bucks"] < total_cost:
-            return jsonify({"error": f"Need ₳{total_cost:.2f}, you have ₳{u['arm_bucks']:.2f}"}), 400
-
-        u["arm_bucks"] -= total_cost
-        u["shiny_portfolio"][shiny_key] = u["shiny_portfolio"].get(shiny_key, 0) + qty
-        save(market)
-
-    return jsonify({
-        "success":   True,
-        "cost":      total_cost,
-        "arm_bucks": round(u["arm_bucks"], 4),
-    })
-
-@app.route("/api/marketplace/sell_shiny", methods=["POST"])
-def sell_shiny():
-    """Sell a shiny stock back at current base × multiplier price."""
-    body      = request.json or {}
-    uid       = body.get("user_id", "")
-    shiny_key = body.get("shiny_key", "")
-    qty       = max(1, int(body.get("qty", 1)))
-
-    with lock:
-        u = market["users"].get(uid)
-        if not u: return jsonify({"error": "User not found"}), 404
-        _ensure_user_fields(u)
-
-        owned = u["shiny_portfolio"].get(shiny_key, 0)
-        if qty > owned:
-            return jsonify({"error": f"You only own {owned}"}), 400
-
-        info = market.get("shiny_registry", {}).get(shiny_key)
-        if not info: return jsonify({"error": "Shiny type not found"}), 404
-
-        base = market["stocks"].get(info["base_ticker"])
-        if not base: return jsonify({"error": "Base stock not found"}), 404
-
-        price    = round(base["current_price"] * info["multiplier"], 4)
-        proceeds = round(price * qty, 4)
-
-        u["arm_bucks"] -= 0   # sanity
-        u["arm_bucks"] += proceeds
-        u["shiny_portfolio"][shiny_key] -= qty
-        save(market)
-
-    return jsonify({
-        "success":   True,
-        "proceeds":  proceeds,
-        "arm_bucks": round(u["arm_bucks"], 4),
-    })
+# buy_shiny and sell_shiny routes removed.
+# Shiny cards are only obtainable via booster packs / spin the wheel.
+# Trading is exclusively through the Shiny Resale Market (/api/shiny-market/*).
 
 # ─────────────────────────── ETF FUNDS ───────────────────────
 
@@ -1425,6 +1357,41 @@ def _get_spotify_token():
     except Exception as e:
         print(f"  [Spotify] token error: {e}")
         return None
+
+@app.route("/api/radio/debug")
+def radio_debug():
+    """Public debug endpoint — shows config state without exposing secrets."""
+    with lock:
+        playlist_url = market.get("radio_playlist", "")
+    has_id     = bool(SPOTIFY_CLIENT_ID)
+    has_secret = bool(SPOTIFY_CLIENT_SECRET)
+    token      = None
+    token_err  = None
+    if has_id and has_secret:
+        try:
+            token = _get_spotify_token()
+        except Exception as e:
+            token_err = str(e)
+    pid = playlist_url.strip().split("/")[-1].split("?")[0] if playlist_url else ""
+    # Try a quick playlist fetch if we have everything
+    fetch_status = None
+    if token and pid:
+        try:
+            resp = http_requests.get(
+                f"https://api.spotify.com/v1/playlists/{pid}?fields=name,public,tracks(total)",
+                headers={"Authorization": f"Bearer {token}"}, timeout=8)
+            fetch_status = {"status_code": resp.status_code, "body": resp.json()}
+        except Exception as e:
+            fetch_status = {"error": str(e)}
+    return jsonify({
+        "spotify_client_id_set":     has_id,
+        "spotify_client_secret_set": has_secret,
+        "token_obtained":            bool(token),
+        "token_error":               token_err,
+        "playlist_url_saved":        playlist_url,
+        "playlist_id_parsed":        pid,
+        "playlist_fetch":            fetch_status,
+    })
 
 @app.route("/api/radio")
 def get_radio():
