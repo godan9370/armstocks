@@ -37,13 +37,34 @@ PACK_COST  = 5.0
 PACK_SIZE  = 5
 # (tier_name, 1-in-N chance, value_multiplier_over_base_price)
 SHINY_TIERS = [
-    ("PLATINUM", 1000, 5.0),
-    ("GOLD",      500, 4.0),
-    ("SILVER",    250, 3.0),
-    ("BRONZE",    100, 2.0),
+    ("PLATINUM", 250, 5.0),
+    ("GOLD",     100, 4.0),
+    ("SILVER",    50, 3.0),
+    ("BRONZE",    25, 2.0),
 ]
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+# ── Spin the Wheel ──
+WHEEL_COST = 2.0
+# (outcome_name, weight_out_of_150)
+WHEEL_OUTCOMES = [
+    ("pack",       50),   # 33.3%  — full booster pack
+    ("free_stock", 30),   # 20.0%  — 1 random stock share
+    ("bust",       30),   # 20.0%  — lose the ₳2
+    ("cash",       15),   # 10.0%  — ₳4 back
+    ("spin_again", 19),   # 12.7%  — free re-spin (auto-resolved)
+    ("bronze",      6),   # 4.0%   — bronze shiny card
+]
+# Visual segment arc ranges (° from top, clockwise) — must match frontend
+WHEEL_ANGLE_RANGES = {
+    "pack":       (0,     120.0),
+    "free_stock": (120.0, 192.0),
+    "bust":       (192.0, 264.0),
+    "cash":       (264.0, 300.0),
+    "spin_again": (300.0, 345.6),
+    "bronze":     (345.6, 360.0),
+}
 
 # ── ETF Funds ──
 ETF_START_PRICE      = 5.0    # ₳ per unit at IPO (NAV tracks constituent performance)
@@ -67,10 +88,10 @@ ETF_FUNDS = {
         "desc":    "Operations & admin excellence",
     },
     "graduate": {
-        "name":    "Graduate Fund",
+        "name":    "Student & Grad Fund",
         "emoji":   "▲",
         "color":   "#00ff88",
-        "members": ["Nadia Poppen", "Raman", "Bella"],
+        "members": ["Nadia Poppen", "Raman", "Bella", "Ryan", "Zihe Chen"],
         "desc":    "High growth emerging talent",
     },
     "meme": {
@@ -136,6 +157,111 @@ def compute_etf_nav(fund_id):
     if not ratios:
         return ETF_START_PRICE
     return round(ETF_START_PRICE * (sum(ratios) / len(ratios)), 4)
+
+def _generate_pack_cards(u):
+    """Generate PACK_SIZE cards for a user (no cost deduction). Returns card list."""
+    tickers = list(market["stocks"].keys())
+    cards   = []
+    for _ in range(PACK_SIZE):
+        base_ticker = random.choice(tickers)
+        base_stock  = market["stocks"][base_ticker]
+        shiny_roll  = roll_shiny()
+        if shiny_roll:
+            tier, mult = shiny_roll
+            shiny_key  = f"{base_ticker}_{tier}"
+            if shiny_key not in market["shiny_registry"]:
+                market["shiny_registry"][shiny_key] = {
+                    "shiny_key":   shiny_key,
+                    "base_ticker": base_ticker,
+                    "name":        base_stock["name"],
+                    "image":       base_stock["image"],
+                    "tier":        tier,
+                    "multiplier":  mult,
+                }
+            u["shiny_portfolio"][shiny_key] = u["shiny_portfolio"].get(shiny_key, 0) + 1
+            cards.append({
+                "type":        "shiny",
+                "shiny_key":   shiny_key,
+                "base_ticker": base_ticker,
+                "name":        base_stock["name"],
+                "image":       base_stock["image"],
+                "tier":        tier,
+                "multiplier":  mult,
+                "base_price":  round(base_stock["current_price"], 4),
+                "shiny_price": round(base_stock["current_price"] * mult, 4),
+            })
+        else:
+            u["portfolio"][base_ticker] = u["portfolio"].get(base_ticker, 0) + 1
+            cards.append({
+                "type":  "normal",
+                "ticker": base_ticker,
+                "name":   base_stock["name"],
+                "image":  base_stock["image"],
+                "price":  round(base_stock["current_price"], 4),
+            })
+    return cards
+
+
+def _resolve_wheel_spin(u, free=False):
+    """Execute one wheel spin. Charges WHEEL_COST unless free=True.
+    Returns (outcome, land_angle, reward_dict)."""
+    if not free:
+        u["arm_bucks"] -= WHEEL_COST
+
+    names   = [o[0] for o in WHEEL_OUTCOMES]
+    weights = [o[1] for o in WHEEL_OUTCOMES]
+    outcome = random.choices(names, weights=weights, k=1)[0]
+
+    lo, hi     = WHEEL_ANGLE_RANGES[outcome]
+    land_angle = round(random.uniform(lo + 0.5, hi - 0.5), 1)
+
+    reward = {"type": outcome}
+
+    if outcome == "pack":
+        cards = _generate_pack_cards(u)
+        reward["cards"] = cards
+
+    elif outcome == "free_stock":
+        tickers     = list(market["stocks"].keys())
+        base_ticker = random.choice(tickers)
+        base_stock  = market["stocks"][base_ticker]
+        u["portfolio"][base_ticker] = u["portfolio"].get(base_ticker, 0) + 1
+        reward["ticker"] = base_ticker
+        reward["name"]   = base_stock["name"]
+        reward["image"]  = base_stock["image"]
+        reward["price"]  = round(base_stock["current_price"], 4)
+
+    elif outcome == "cash":
+        u["arm_bucks"] += 4.0
+        reward["amount"] = 4.0
+
+    elif outcome == "bronze":
+        tickers     = list(market["stocks"].keys())
+        base_ticker = random.choice(tickers)
+        base_stock  = market["stocks"][base_ticker]
+        shiny_key   = f"{base_ticker}_BRONZE"
+        if shiny_key not in market["shiny_registry"]:
+            market["shiny_registry"][shiny_key] = {
+                "shiny_key":   shiny_key,
+                "base_ticker": base_ticker,
+                "name":        base_stock["name"],
+                "image":       base_stock["image"],
+                "tier":        "BRONZE",
+                "multiplier":  2.0,
+            }
+        u["shiny_portfolio"][shiny_key] = u["shiny_portfolio"].get(shiny_key, 0) + 1
+        reward["shiny_key"]  = shiny_key
+        reward["name"]       = base_stock["name"]
+        reward["image"]      = base_stock["image"]
+        reward["tier"]       = "BRONZE"
+        reward["multiplier"] = 2.0
+        reward["base_price"] = round(base_stock["current_price"], 4)
+        reward["shiny_price"]= round(base_stock["current_price"] * 2.0, 4)
+
+    # bust: nothing — just lost the ₳2
+
+    return outcome, land_angle, reward
+
 
 def pred_odds(p):
     """Return (yes_mult, no_mult) — how much ₳ back per ₳1 bet if that side wins."""
@@ -231,8 +357,19 @@ market = None
 lock   = threading.Lock()
 
 # ─────────────────────────── AI EVENT INTERPRETER ─────────────
-def interpret_event(event_text, stocks):
+def interpret_event(event_text, stocks, sentiment="auto"):
+    """Interpret an admin market event into stock impacts.
+    sentiment: 'positive', 'negative', or 'auto' (let AI decide).
+    """
     names_map = {t: stocks[t]["name"] for t in stocks}
+    sentiment_hint = ""
+    fallback_positive = None
+    if sentiment == "positive":
+        sentiment_hint = "The admin has flagged this as a POSITIVE outcome — affected stocks should go UP."
+        fallback_positive = True
+    elif sentiment == "negative":
+        sentiment_hint = "The admin has flagged this as a NEGATIVE outcome — affected stocks should go DOWN."
+        fallback_positive = False
     try:
         import anthropic
         client = anthropic.Anthropic()
@@ -244,8 +381,9 @@ def interpret_event(event_text, stocks):
                 "content": (
                     f"You are the event engine for @RM!2T0CKS, a retro office stock exchange.\n"
                     f"Available stocks (ticker → person):\n{json.dumps(names_map)}\n\n"
-                    f"Event: \"{event_text}\"\n\n"
-                    f"Determine which stocks are affected and by what % (-50 to +50). "
+                    f"Event: \"{event_text}\"\n"
+                    + (f"{sentiment_hint}\n" if sentiment_hint else "") +
+                    f"\nDetermine which stocks are affected and by what % (-50 to +50). "
                     f"Only include stocks clearly relevant to the event. "
                     f"Respond ONLY with valid JSON:\n"
                     f"{{\"impacts\":{{\"TICKER\":number}},\"summary\":\"exciting ticker headline ≤60 chars\"}}"
@@ -262,10 +400,17 @@ def interpret_event(event_text, stocks):
         for ticker, stock in stocks.items():
             first = stock["name"].split()[0].lower()
             if first in event_text.lower():
-                impacts[ticker] = round(random.uniform(5, 30) * (1 if random.random() > 0.3 else -1), 1)
+                mag = round(random.uniform(5, 30), 1)
+                if fallback_positive is True:
+                    impacts[ticker] = mag
+                elif fallback_positive is False:
+                    impacts[ticker] = -mag
+                else:
+                    impacts[ticker] = mag * (1 if random.random() > 0.3 else -1)
         if not impacts:
             t = random.choice(list(stocks.keys()))
-            impacts[t] = round(random.uniform(-20, 30), 1)
+            mag = round(random.uniform(5, 25), 1)
+            impacts[t] = mag if fallback_positive is not False else -mag
         return impacts, f"MARKET UPDATE: {event_text[:55]}"
 
 # ─────────────────────────── ROUTES ───────────────────────────
@@ -759,54 +904,7 @@ def buy_pack():
             return jsonify({"error": f"Need ₳{PACK_COST:.2f}, you have ₳{u['arm_bucks']:.2f}"}), 400
 
         u["arm_bucks"] -= PACK_COST
-        tickers = list(market["stocks"].keys())
-        cards   = []
-
-        for _ in range(PACK_SIZE):
-            base_ticker = random.choice(tickers)
-            base_stock  = market["stocks"][base_ticker]
-            shiny_roll  = roll_shiny()
-
-            if shiny_roll:
-                tier, mult = shiny_roll
-                shiny_key = f"{base_ticker}_{tier}"
-
-                # Register this shiny type if it's new
-                if shiny_key not in market["shiny_registry"]:
-                    market["shiny_registry"][shiny_key] = {
-                        "shiny_key":   shiny_key,
-                        "base_ticker": base_ticker,
-                        "name":        base_stock["name"],
-                        "image":       base_stock["image"],
-                        "tier":        tier,
-                        "multiplier":  mult,
-                    }
-
-                u["shiny_portfolio"][shiny_key] = u["shiny_portfolio"].get(shiny_key, 0) + 1
-                shiny_price_val = round(base_stock["current_price"] * mult, 4)
-
-                cards.append({
-                    "type":        "shiny",
-                    "shiny_key":   shiny_key,
-                    "base_ticker": base_ticker,
-                    "name":        base_stock["name"],
-                    "image":       base_stock["image"],
-                    "tier":        tier,
-                    "multiplier":  mult,
-                    "base_price":  round(base_stock["current_price"], 4),
-                    "shiny_price": shiny_price_val,
-                })
-            else:
-                # Normal share — give 1 share, no market-impact (pack gift)
-                u["portfolio"][base_ticker] = u["portfolio"].get(base_ticker, 0) + 1
-
-                cards.append({
-                    "type":    "normal",
-                    "ticker":  base_ticker,
-                    "name":    base_stock["name"],
-                    "image":   base_stock["image"],
-                    "price":   round(base_stock["current_price"], 4),
-                })
+        cards = _generate_pack_cards(u)
 
         u["pack_history"].append({"ts": now_iso(), "cards": len(cards)})
         save(market)
@@ -816,6 +914,39 @@ def buy_pack():
         "cards":     cards,
         "arm_bucks": round(u["arm_bucks"], 4),
     })
+
+@app.route("/api/spin", methods=["POST"])
+def spin_wheel():
+    """Spin the wheel for ₳2. Returns outcome + wheel landing angle for animation."""
+    body = request.json or {}
+    uid  = body.get("user_id", "")
+    with lock:
+        u = market["users"].get(uid)
+        if not u:
+            return jsonify({"error": "User not found"}), 404
+        _ensure_user_fields(u)
+        if u["arm_bucks"] < WHEEL_COST:
+            return jsonify({"error": f"Need ₳{WHEEL_COST:.2f} to spin, you have ₳{u['arm_bucks']:.2f}"}), 400
+
+        outcome, land_angle, reward = _resolve_wheel_spin(u, free=False)
+
+        # If spin_again — resolve a free second spin immediately
+        spin2 = None
+        if outcome == "spin_again":
+            o2, a2, r2 = _resolve_wheel_spin(u, free=True)
+            spin2 = {"outcome": o2, "land_angle": a2, "reward": r2}
+
+        save(market)
+
+    return jsonify({
+        "success":    True,
+        "outcome":    outcome,
+        "land_angle": land_angle,
+        "reward":     reward,
+        "spin_again": spin2,
+        "arm_bucks":  round(u["arm_bucks"], 4),
+    })
+
 
 @app.route("/api/marketplace/shinies")
 def get_shinies():
@@ -1030,12 +1161,15 @@ def admin_event():
     body = request.json or {}
     if body.get("password") != ADMIN_PASSWORD:
         return jsonify({"error": "Wrong password"}), 403
-    text = body.get("event_text", "").strip()
+    text      = body.get("event_text", "").strip()
+    sentiment = body.get("sentiment", "auto").lower()   # "positive", "negative", or "auto"
+    if sentiment not in ("positive", "negative", "auto"):
+        sentiment = "auto"
     if not text:
         return jsonify({"error": "Event text required"}), 400
     with lock:
         snap = {k: dict(v) for k, v in market["stocks"].items()}
-    impacts, summary = interpret_event(text, snap)
+    impacts, summary = interpret_event(text, snap, sentiment)
     with lock:
         for ticker, pct in impacts.items():
             if ticker in market["stocks"]:
@@ -1043,10 +1177,37 @@ def admin_event():
                 s["current_price"] = round(max(0.01, s["current_price"] * (1 + pct / 100)), 4)
                 s["price_history"].append({"ts": now_iso(), "price": s["current_price"],
                                            "volume": 0, "type": "event", "event": summary})
-        event = {"ts": now_iso(), "admin_text": text, "summary": summary, "impacts": impacts}
+        event = {
+            "id":         str(uuid.uuid4()),
+            "ts":         now_iso(),
+            "admin_text": text,
+            "summary":    summary,
+            "sentiment":  sentiment,
+            "impacts":    impacts,
+            "recalled":   False,
+        }
         market["events"].append(event)
         save(market)
     return jsonify({"success": True, "event": event})
+
+
+@app.route("/api/admin/event/recall", methods=["POST"])
+def admin_recall_event():
+    """Remove an event from the news feed (price changes are not reversed)."""
+    body     = request.json or {}
+    if body.get("password") != ADMIN_PASSWORD:
+        return jsonify({"error": "Wrong password"}), 403
+    event_id = body.get("event_id", "")
+    if not event_id:
+        return jsonify({"error": "event_id required"}), 400
+    with lock:
+        original = len(market["events"])
+        market["events"] = [e for e in market["events"] if e.get("id") != event_id]
+        removed = original - len(market["events"])
+        save(market)
+    if removed == 0:
+        return jsonify({"error": "Event not found"}), 404
+    return jsonify({"success": True, "removed": removed})
 
 @app.route("/api/admin/phase", methods=["POST"])
 def admin_phase():
@@ -1136,11 +1297,19 @@ def background_loop():
                     active  = [c for c in u["futures"] if c["status"] == "active"]
                     u["futures"] = active + settled[-30:]
 
-                # ── Random price drift ──
+                # ── Micro-fluctuation (every tick) ──
+                for ticker, s in market["stocks"].items():
+                    micro = random.gauss(0, 0.003)   # ±0.3% std per minute
+                    s["current_price"] = round(max(0.01, s["current_price"] * (1 + micro)), 4)
+                    s["price_history"].append({"ts": n.isoformat(),
+                                               "price": s["current_price"],
+                                               "volume": 0, "type": "micro"})
+
+                # ── Larger random drift (every DRIFT_INTERVAL seconds) ──
                 last_drift = datetime.fromisoformat(market.get("last_drift", n.isoformat()))
                 if (n - last_drift).total_seconds() >= DRIFT_INTERVAL:
                     for ticker, s in market["stocks"].items():
-                        drift = random.gauss(0, 0.012)
+                        drift = random.gauss(0, 0.010)
                         s["current_price"] = round(max(0.01, s["current_price"] * (1 + drift)), 4)
                         s["price_history"].append({"ts": n.isoformat(),
                                                    "price": s["current_price"],

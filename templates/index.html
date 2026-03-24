@@ -206,6 +206,69 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 .lb-user { font-size:1.1rem; }
 .lb-val  { font-size:1.1rem; text-align:right; }
 
+/* SPIN WHEEL */
+.wheel-section { text-align:center; padding:24px 0 32px; }
+.wheel-section h2 { font-size:1.8rem; color:var(--pink);
+  text-shadow:0 0 12px var(--pink); margin-bottom:6px; }
+.wheel-section .wheel-subtitle { color:var(--dim); font-size:.9rem; margin-bottom:20px; }
+.wheel-outer { position:relative; display:inline-block; }
+.wheel-pointer {
+  position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+  width:0; height:0;
+  border-left:10px solid transparent;
+  border-right:10px solid transparent;
+  border-top:22px solid var(--yellow);
+  filter:drop-shadow(0 0 6px var(--yellow));
+  z-index:10;
+}
+.wheel-canvas-wrap {
+  width:280px; height:280px; border-radius:50%;
+  border:3px solid rgba(0,245,255,.5);
+  box-shadow:0 0 24px rgba(0,245,255,.3), inset 0 0 20px rgba(0,0,0,.4);
+  overflow:hidden; position:relative;
+}
+#wheelCanvas { display:block; border-radius:50%; }
+.wheel-spin-btn {
+  display:block; margin:20px auto 0;
+  padding:14px 40px; font-family:var(--font); font-size:1.5rem;
+  background:linear-gradient(135deg,rgba(255,0,144,.2),rgba(204,0,255,.2));
+  border:2px solid var(--pink); color:var(--pink);
+  border-radius:4px; cursor:pointer; letter-spacing:.1em;
+  box-shadow:0 0 16px rgba(255,0,144,.4);
+  transition:all .2s;
+}
+.wheel-spin-btn:hover:not(:disabled) {
+  background:linear-gradient(135deg,rgba(255,0,144,.4),rgba(204,0,255,.4));
+  box-shadow:0 0 28px rgba(255,0,144,.7);
+}
+.wheel-spin-btn:disabled { opacity:.4; cursor:not-allowed; }
+.wheel-result-box {
+  max-width:320px; margin:18px auto 0;
+  padding:14px 20px; border-radius:6px;
+  border:2px solid var(--cyan); background:rgba(0,245,255,.06);
+  font-size:1.2rem; min-height:56px;
+  transition:all .3s;
+}
+.wheel-result-box.result-win  { border-color:var(--green);  background:rgba(0,255,136,.06); }
+.wheel-result-box.result-bust { border-color:var(--red);    background:rgba(255,34,85,.06); }
+.wheel-result-box.result-again{ border-color:var(--purple); background:rgba(204,0,255,.06); }
+.wheel-legend {
+  display:flex; flex-wrap:wrap; justify-content:center;
+  gap:8px 14px; margin:16px auto 0; max-width:380px;
+}
+.wheel-legend-item {
+  display:flex; align-items:center; gap:6px;
+  font-size:.82rem; color:var(--dim);
+}
+.wheel-legend-dot {
+  width:12px; height:12px; border-radius:50%; flex-shrink:0;
+}
+.wheel-cost-badge {
+  display:inline-block; padding:4px 16px; border:1px solid var(--yellow);
+  color:var(--yellow); font-size:1rem; border-radius:3px; margin-bottom:12px;
+  box-shadow:0 0 8px rgba(255,230,0,.3);
+}
+
 /* ADMIN */
 .admin-section { margin-bottom:28px; }
 .admin-section h3 { font-size:1.4rem; color:var(--purple); margin-bottom:14px;
@@ -218,6 +281,18 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 .event-log { max-height:180px; overflow-y:auto; font-size:.9rem; }
 .event-log-item { padding:6px 0; border-bottom:1px solid rgba(255,255,255,.05); color:var(--dim); }
 .event-log-item span { color:var(--text); }
+.sent-btn { font-size:.85rem; padding:5px 12px; opacity:.5; transition:opacity .15s; }
+.sent-btn.active-sent { opacity:1; box-shadow:0 0 10px var(--purple); }
+.recall-event-row { display:flex; justify-content:space-between; align-items:center;
+  padding:6px 10px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
+  border-radius:4px; font-size:.85rem; gap:8px; }
+.recall-event-row .recall-summary { color:var(--text); flex:1; overflow:hidden;
+  white-space:nowrap; text-overflow:ellipsis; }
+.recall-event-row .recall-ts { color:var(--dim); font-size:.78rem; flex-shrink:0; }
+.recall-event-row .recall-btn { background:rgba(255,34,85,.12); border:1px solid var(--red);
+  color:var(--red); padding:3px 10px; border-radius:3px; cursor:pointer; font-family:var(--font);
+  font-size:.8rem; flex-shrink:0; }
+.recall-event-row .recall-btn:hover { background:rgba(255,34,85,.3); }
 
 /* FUTURES */
 .futures-info-bar { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:24px; padding:14px 20px;
@@ -722,6 +797,29 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 <div class="view" id="view-shop">
   <div class="section-title" style="color:var(--yellow);text-shadow:0 0 8px var(--yellow)">🃏 SHOP</div>
 
+  <!-- SPIN THE WHEEL -->
+  <div class="wheel-section box" style="margin-bottom:32px;border-radius:8px">
+    <h2>🎡 SPIN THE WHEEL</h2>
+    <div class="wheel-subtitle">Try your luck — every spin is a surprise</div>
+    <div class="wheel-cost-badge">₳2.00 per spin</div>
+    <div class="wheel-outer">
+      <div class="wheel-pointer"></div>
+      <div class="wheel-canvas-wrap">
+        <canvas id="wheelCanvas" width="280" height="280"></canvas>
+      </div>
+    </div>
+    <div id="wheelResult" class="wheel-result-box" style="visibility:hidden">—</div>
+    <button class="wheel-spin-btn" id="btnSpin" onclick="spinWheel()">◈ SPIN ◈</button>
+    <div class="wheel-legend">
+      <div class="wheel-legend-item"><div class="wheel-legend-dot" style="background:#00f5ff"></div>Pack (1/3)</div>
+      <div class="wheel-legend-item"><div class="wheel-legend-dot" style="background:#00ff88"></div>Stock (1/5)</div>
+      <div class="wheel-legend-item"><div class="wheel-legend-dot" style="background:#330011;border:1px solid #ff2255"></div>Bust (1/5)</div>
+      <div class="wheel-legend-item"><div class="wheel-legend-dot" style="background:#ffe600"></div>₳4 Cash (1/10)</div>
+      <div class="wheel-legend-item"><div class="wheel-legend-dot" style="background:#cc00ff"></div>Spin Again (~1/8)</div>
+      <div class="wheel-legend-item"><div class="wheel-legend-dot" style="background:#cd7f32"></div>Bronze Card (1/25)</div>
+    </div>
+  </div>
+
   <div class="shop-grid">
     <div class="pack-item">
       <div class="pack-art">
@@ -735,25 +833,25 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
         <div class="pack-odds-row tier-BRONZE">
           <span class="tier-star">★</span>
           <span class="tier-name">BRONZE</span>
-          <span class="tier-rate">1 in 100 chance</span>
+          <span class="tier-rate">1 in 25 chance</span>
           <span style="color:var(--bronze);font-size:.8rem;margin-left:6px">2×</span>
         </div>
         <div class="pack-odds-row tier-SILVER">
           <span class="tier-star">★★</span>
           <span class="tier-name">SILVER</span>
-          <span class="tier-rate">1 in 250 chance</span>
+          <span class="tier-rate">1 in 50 chance</span>
           <span style="color:var(--silver-c);font-size:.8rem;margin-left:6px">3×</span>
         </div>
         <div class="pack-odds-row tier-GOLD">
           <span class="tier-star">★★★</span>
           <span class="tier-name">GOLD</span>
-          <span class="tier-rate">1 in 500 chance</span>
+          <span class="tier-rate">1 in 100 chance</span>
           <span style="color:var(--gold-c);font-size:.8rem;margin-left:6px">4×</span>
         </div>
         <div class="pack-odds-row tier-PLATINUM">
           <span class="tier-star">✦</span>
           <span class="tier-name">PLATINUM</span>
-          <span class="tier-rate">1 in 1000 chance</span>
+          <span class="tier-rate">1 in 250 chance</span>
           <span style="font-size:.8rem;margin-left:6px;background:linear-gradient(90deg,#b0f,#0ff,#ff0);-webkit-background-clip:text;-webkit-text-fill-color:transparent">5×</span>
         </div>
       </div>
@@ -831,8 +929,18 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <div class="admin-section">
     <h3>Fire an Event</h3>
     <input class="admin-input" id="eventText" placeholder="e.g. Dan just won the national award!">
+    <div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;align-items:center">
+      <span style="color:var(--dim);font-size:.9rem">Outcome:</span>
+      <button id="sentBtn-auto"     class="btn btn-admin sent-btn active-sent" onclick="setSentiment('auto')">🤖 AUTO</button>
+      <button id="sentBtn-positive" class="btn btn-admin sent-btn"             onclick="setSentiment('positive')">📈 POSITIVE</button>
+      <button id="sentBtn-negative" class="btn btn-admin sent-btn"             onclick="setSentiment('negative')">📉 NEGATIVE</button>
+    </div>
     <button class="btn btn-admin" onclick="fireEvent()">FIRE EVENT</button>
     <div class="event-log" id="eventLog"></div>
+    <div style="margin-top:16px">
+      <h4 style="color:var(--dim);font-size:.9rem;margin-bottom:8px">RECENT EVENTS — click to recall</h4>
+      <div id="recentEventsList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
   </div>
 
   <div class="admin-section">
@@ -1401,6 +1509,174 @@ async function placePredBet(predId, bet) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  SPIN THE WHEEL
+// ═══════════════════════════════════════════════════════════════
+const WHEEL_SEGS = [
+  { key:'pack',       label:'🃏 PACK',    deg:120.0, color:'#00f5ff', text:'#07071a' },
+  { key:'free_stock', label:'📈 STOCK',   deg:72.0,  color:'#00ff88', text:'#07071a' },
+  { key:'bust',       label:'💀 BUST',    deg:72.0,  color:'#1a0008', text:'#ff2255' },
+  { key:'cash',       label:'₳4 CASH',   deg:36.0,  color:'#ffe600', text:'#07071a' },
+  { key:'spin_again', label:'🔄 AGAIN',   deg:45.6,  color:'#cc00ff', text:'#ffffff' },
+  { key:'bronze',     label:'🥉 BRONZE',  deg:14.4,  color:'#cd7f32', text:'#ffffff' },
+];
+let wheelRotation = 0;
+let wheelSpinning = false;
+
+function drawWheel() {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2, r = cx - 3;
+  ctx.clearRect(0, 0, W, H);
+  let startRad = -Math.PI / 2;  // start from top (12 o'clock)
+  WHEEL_SEGS.forEach(seg => {
+    const arc = seg.deg * Math.PI / 180;
+    const endRad = startRad + arc;
+    // Segment fill
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startRad, endRad);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Label text
+    const midRad = startRad + arc / 2;
+    const tr = r * 0.62;
+    const tx = cx + tr * Math.cos(midRad);
+    const ty = cy + tr * Math.sin(midRad);
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(midRad + Math.PI / 2);
+    ctx.fillStyle = seg.text;
+    ctx.font = `bold ${seg.deg < 20 ? 9 : seg.deg < 40 ? 10 : 12}px 'Share Tech Mono',monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Split label if needed
+    const parts = seg.label.split(' ');
+    if (parts.length > 1 && seg.deg >= 30) {
+      ctx.fillText(parts[0], 0, -7);
+      ctx.fillText(parts[1], 0, 7);
+    } else {
+      ctx.fillText(seg.label, 0, 0);
+    }
+    ctx.restore();
+    startRad = endRad;
+  });
+  // Centre cap
+  ctx.beginPath();
+  ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+  ctx.fillStyle = '#07071a';
+  ctx.fill();
+  ctx.strokeStyle = '#00f5ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#00f5ff';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('◈', cx, cy);
+}
+
+async function spinWheel() {
+  if (!userId) { toast('Log in first', 'err'); return; }
+  if (wheelSpinning) return;
+  const btn = document.getElementById('btnSpin');
+  const resultBox = document.getElementById('wheelResult');
+  wheelSpinning = true;
+  btn.disabled = true;
+  btn.textContent = 'SPINNING…';
+  resultBox.style.visibility = 'hidden';
+  resultBox.className = 'wheel-result-box';
+
+  let d;
+  try {
+    const r = await fetch('/api/spin', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({user_id: userId})});
+    d = await r.json();
+    if (d.error) { toast(d.error, 'err'); wheelSpinning=false; btn.disabled=false; btn.textContent='◈ SPIN ◈'; return; }
+  } catch(e) { toast('Network error','err'); wheelSpinning=false; btn.disabled=false; btn.textContent='◈ SPIN ◈'; return; }
+
+  // Animate wheel to land_angle
+  const landAngle = d.land_angle;
+  // To land pointer (at top=0°) on wheel-angle A, rotate wheel by (360 - A)
+  const targetDelta = 360 * 6 + (360 - landAngle);
+  wheelRotation += targetDelta;
+  const canvas = document.getElementById('wheelCanvas');
+  canvas.style.transition = `transform 4s cubic-bezier(0.17,0.67,0.12,1.0)`;
+  canvas.style.transform  = `rotate(${wheelRotation}deg)`;
+
+  setTimeout(() => {
+    armBucks = d.arm_bucks;
+    updateBucksDisplay();
+    showWheelResult(d.outcome, d.reward, resultBox);
+
+    if (d.spin_again) {
+      // Brief pause then show the second spin
+      setTimeout(() => {
+        const landAngle2 = d.spin_again.land_angle;
+        const targetDelta2 = 360 * 5 + (360 - landAngle2);
+        wheelRotation += targetDelta2;
+        canvas.style.transition = `transform 3.5s cubic-bezier(0.17,0.67,0.12,1.0)`;
+        canvas.style.transform  = `rotate(${wheelRotation}deg)`;
+        resultBox.className = 'wheel-result-box result-again';
+        resultBox.innerHTML = `🔄 <span style="color:var(--purple)">FREE SPIN!</span>`;
+        setTimeout(() => {
+          armBucks = d.arm_bucks;
+          updateBucksDisplay();
+          showWheelResult(d.spin_again.outcome, d.spin_again.reward, resultBox);
+          wheelSpinning = false;
+          btn.disabled = false;
+          btn.textContent = '◈ SPIN ◈';
+        }, 4000);
+      }, 1200);
+    } else {
+      wheelSpinning = false;
+      btn.disabled = false;
+      btn.textContent = '◈ SPIN ◈';
+    }
+  }, 4200);
+}
+
+function showWheelResult(outcome, reward, box) {
+  box.style.visibility = 'visible';
+  if (outcome === 'bust') {
+    box.className = 'wheel-result-box result-bust';
+    box.innerHTML = `💀 <span style="color:var(--red)">BUST — better luck next spin!</span>`;
+  } else if (outcome === 'cash') {
+    box.className = 'wheel-result-box result-win';
+    box.innerHTML = `💰 <span style="color:var(--yellow)">₳4.00 CASH BACK!</span>`;
+    spawnSparkles(window.innerWidth/2, window.innerHeight/2, 'SILVER');
+  } else if (outcome === 'free_stock') {
+    box.className = 'wheel-result-box result-win';
+    box.innerHTML = `📈 <span style="color:var(--green)">1 × ${reward.name} share added to portfolio!</span>`;
+    spawnSparkles(window.innerWidth/2, window.innerHeight/2, 'BRONZE');
+  } else if (outcome === 'bronze') {
+    box.className = 'wheel-result-box result-win';
+    box.innerHTML = `🥉 <span style="color:#cd7f32">BRONZE SHINY — ${reward.name} (2×)!</span>`;
+    spawnSparkles(window.innerWidth/2, window.innerHeight/2, 'BRONZE');
+  } else if (outcome === 'pack') {
+    box.className = 'wheel-result-box result-win';
+    box.innerHTML = `🃏 <span style="color:var(--cyan)">BOOSTER PACK! Opening…</span>`;
+    spawnSparkles(window.innerWidth/2, window.innerHeight/2, 'GOLD');
+    setTimeout(() => {
+      packCards = reward.cards;
+      packRevealedCount = 0;
+      showPackOpenOverlay(reward.cards);
+    }, 800);
+  } else if (outcome === 'spin_again') {
+    box.className = 'wheel-result-box result-again';
+    box.innerHTML = `🔄 <span style="color:var(--purple)">SPIN AGAIN — free re-spin!</span>`;
+  }
+}
+
+// Initialise wheel on page load
+window.addEventListener('load', () => { drawWheel(); });
+
+// ═══════════════════════════════════════════════════════════════
 //  SHOP — BOOSTER PACKS
 // ═══════════════════════════════════════════════════════════════
 async function buyPack() {
@@ -1673,20 +1949,61 @@ async function resetMarket() {
   fetchMarket();
 }
 
+let currentSentiment = 'auto';
+function setSentiment(s) {
+  currentSentiment = s;
+  document.querySelectorAll('.sent-btn').forEach(b => b.classList.remove('active-sent'));
+  document.getElementById(`sentBtn-${s}`).classList.add('active-sent');
+}
+
 async function fireEvent() {
   const pw   = document.getElementById('adminPw').value;
   const text = document.getElementById('eventText').value.trim();
   if (!text) { toast('Enter event text','err'); return; }
   const r = await fetch('/api/admin/event',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({password:pw,event_text:text})});
+    body:JSON.stringify({password:pw, event_text:text, sentiment:currentSentiment})});
   const d = await r.json();
   if (d.error) { toast(d.error,'err'); return; }
   toast('Event fired!');
   const log  = document.getElementById('eventLog');
   const item = document.createElement('div');
   item.className = 'event-log-item';
-  item.innerHTML = `<span>${d.event.summary||text}</span>`;
+  const sentIcon = currentSentiment === 'positive' ? '📈 ' : currentSentiment === 'negative' ? '📉 ' : '';
+  item.innerHTML = `<span>${sentIcon}${d.event.summary||text}</span>`;
   log.prepend(item);
+  document.getElementById('eventText').value = '';
+  loadRecentEvents();
+  fetchMarket();
+}
+
+async function loadRecentEvents() {
+  const r = await fetch('/api/market');
+  const d = await r.json();
+  const list = document.getElementById('recentEventsList');
+  if (!list) return;
+  const events = (d.recent_events || []).slice().reverse();
+  if (!events.length) { list.innerHTML = '<div style="color:var(--dim);font-size:.85rem">No events yet</div>'; return; }
+  list.innerHTML = events.map(ev => {
+    const sentIcon = ev.sentiment === 'positive' ? '📈 ' : ev.sentiment === 'negative' ? '📉 ' : '';
+    const ts = ev.ts ? ev.ts.substring(11,16) : '';
+    const id = ev.id || '';
+    return `<div class="recall-event-row">
+      <span class="recall-summary">${sentIcon}${ev.summary || ev.admin_text || ''}</span>
+      <span class="recall-ts">${ts}</span>
+      ${id ? `<button class="recall-btn" onclick="recallEvent('${id}')">RECALL</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function recallEvent(eventId) {
+  const pw = document.getElementById('adminPw').value;
+  if (!confirm('Remove this event from the news feed? (Price changes are NOT reversed)')) return;
+  const r = await fetch('/api/admin/event/recall',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:pw, event_id:eventId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error,'err'); return; }
+  toast('Event recalled from feed');
+  loadRecentEvents();
   fetchMarket();
 }
 
@@ -1775,6 +2092,7 @@ function showView(name, btn) {
   if (name === 'shop')       { fetchShinies(); }
   if (name === 'charts')     { fetchAndRenderChart(); }
   if (name === 'funds')      { fetchFunds(); }
+  if (name === 'admin')      { loadRecentEvents(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
