@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 140" width="320" height="140">
+  <rect width="320" height="140" fill="black"/>
+  <!-- A -->
+  <text x="10" y="118" font-family="Georgia, 'Times New Roman', serif" font-size="130" font-weight="bold" fill="white" letter-spacing="-8">A</text>
+  <!-- R (italic, overlapping) -->
+  <text x="98" y="118" font-family="Georgia, 'Times New Roman', serif" font-size="130" font-style="italic" fill="white" letter-spacing="-8">R</text>
+  <!-- M -->
+  <text x="190" y="118" font-family="Georgia, 'Times New Roman', serif" font-size="130" font-weight="bold" fill="white">M</text>
+</svg>

@@ -17,7 +17,7 @@ HEADSHOTS_DIR  = _static_hs if os.path.isdir(_static_hs) else \
 DATA_FILE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.json")
 ADMIN_PASSWORD = "armbets"
 IPO_PRICE      = 1.0
-STARTING_BUCKS = 10.0
+STARTING_BUCKS = 30.0
 TOTAL_SHARES   = 1000
 BUY_IMPACT     = 0.025
 SELL_IMPACT    = 0.025
@@ -45,6 +45,50 @@ SHINY_TIERS = [
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
+# ── ETF Funds ──
+ETF_START_PRICE      = 5.0    # ₳ per unit at IPO (NAV tracks constituent performance)
+ETF_BASE_DIV_RATE    = 0.003  # 0.3 %/hr base dividend on holdings value
+ETF_MIN_DIV_RATE     = 0.001  # floor: 0.1 %/hr
+ETF_MAX_DIV_RATE     = 0.005  # ceiling: 0.5 %/hr
+
+ETF_FUNDS = {
+    "directors": {
+        "name":    "Directors Fund",
+        "emoji":   "◈",
+        "color":   "#00f5ff",
+        "members": ["Andrew Hayne", "Andrew Lilleyman", "Mark", "Jesse", "Amber Stewart", "Howard", "Ian"],
+        "desc":    "The leadership portfolio",
+    },
+    "admin": {
+        "name":    "Admin Fund",
+        "emoji":   "◉",
+        "color":   "#cc00ff",
+        "members": ["Svetlana", "Meg", "Rhiannon", "Lucy"],
+        "desc":    "Operations & admin excellence",
+    },
+    "graduate": {
+        "name":    "Graduate Fund",
+        "emoji":   "▲",
+        "color":   "#00ff88",
+        "members": ["Nadia Poppen", "Raman", "Bella"],
+        "desc":    "High growth emerging talent",
+    },
+    "meme": {
+        "name":    "Meme Stocks",
+        "emoji":   "★",
+        "color":   "#ff0090",
+        "members": ["KatherineChair", "Nesbubu"],
+        "desc":    "Chaotic neutral. High risk, high reward",
+    },
+    "bids": {
+        "name":    "Bids Team Fund",
+        "emoji":   "⚡",
+        "color":   "#ff8800",
+        "members": ["Dan", "Axeris", "Kirsten"],
+        "desc":    "Winning contracts, growing value",
+    },
+}
+
 # ─────────────────────────── HELPERS ──────────────────────────
 def now_iso():
     return datetime.utcnow().isoformat()
@@ -66,6 +110,32 @@ def roll_shiny():
         if random.random() < 1.0 / denom:
             return (tier, mult)
     return None
+
+def etf_constituent_tickers(fund_id):
+    """Return list of tickers matching the fund's member names."""
+    fund = ETF_FUNDS.get(fund_id)
+    if not fund: return []
+    tickers = []
+    for member_name in fund["members"]:
+        for t, s in market["stocks"].items():
+            if s["name"].lower() == member_name.lower():
+                tickers.append(t)
+                break
+    return tickers
+
+def compute_etf_nav(fund_id):
+    """NAV = ETF_START_PRICE × avg(current/ipo) across constituents."""
+    tickers = etf_constituent_tickers(fund_id)
+    if not tickers:
+        return ETF_START_PRICE
+    ratios = []
+    for t in tickers:
+        s = market["stocks"].get(t)
+        if s and s["ipo_price"] > 0:
+            ratios.append(s["current_price"] / s["ipo_price"])
+    if not ratios:
+        return ETF_START_PRICE
+    return round(ETF_START_PRICE * (sum(ratios) / len(ratios)), 4)
 
 def pred_odds(p):
     """Return (yes_mult, no_mult) — how much ₳ back per ₳1 bet if that side wins."""
@@ -99,6 +169,7 @@ def init_market():
         # Back-compat: add new top-level keys if missing
         if "predictions"    not in existing: existing["predictions"]    = []
         if "shiny_registry" not in existing: existing["shiny_registry"] = {}
+        if "etf_dividends_paid" not in existing: existing["etf_dividends_paid"] = 0.0
         return existing
 
     # Build a deduplicated name→filename map (prefer .jpg/.jpeg over .png/others)
@@ -153,6 +224,7 @@ def _ensure_user_fields(u):
     if "prediction_bets"  not in u: u["prediction_bets"]  = []
     if "shiny_portfolio"  not in u: u["shiny_portfolio"]  = {}
     if "pack_history"     not in u: u["pack_history"]     = []
+    if "etf_portfolio"    not in u: u["etf_portfolio"]    = {}   # fund_id → units held
 
 # ─────────────────────────── GLOBAL STATE ─────────────────────
 market = None
@@ -840,6 +912,117 @@ def sell_shiny():
         "arm_bucks": round(u["arm_bucks"], 4),
     })
 
+# ─────────────────────────── ETF FUNDS ───────────────────────
+
+@app.route("/api/etf/overview")
+def etf_overview():
+    """Return all funds with current NAV, performance, and user holdings."""
+    uid = request.args.get("user_id", "")
+    with lock:
+        u = market["users"].get(uid)
+        if u: _ensure_user_fields(u)
+        out = []
+        for fund_id, fund in ETF_FUNDS.items():
+            nav        = compute_etf_nav(fund_id)
+            perf_pct   = round((nav / ETF_START_PRICE - 1) * 100, 2)
+            units_held = u["etf_portfolio"].get(fund_id, 0) if u else 0
+            holding_val= round(units_held * nav, 4)
+            # Dividend rate scales with fund performance (capped)
+            perf_ratio = nav / ETF_START_PRICE
+            div_rate   = max(ETF_MIN_DIV_RATE, min(ETF_MAX_DIV_RATE,
+                             ETF_BASE_DIV_RATE * (perf_ratio ** 0.5)))
+            # Constituents with current prices
+            tickers    = etf_constituent_tickers(fund_id)
+            members_out = []
+            for t in tickers:
+                s = market["stocks"].get(t)
+                if s:
+                    members_out.append({
+                        "ticker": t, "name": s["name"],
+                        "image": s["image"],
+                        "price": round(s["current_price"], 4),
+                        "chg_pct": round((s["current_price"] - s["ipo_price"]) / s["ipo_price"] * 100, 2),
+                    })
+            out.append({
+                "fund_id":       fund_id,
+                "name":          fund["name"],
+                "emoji":         fund["emoji"],
+                "color":         fund["color"],
+                "desc":          fund["desc"],
+                "nav":           nav,
+                "start_price":   ETF_START_PRICE,
+                "perf_pct":      perf_pct,
+                "div_rate_pct":  round(div_rate * 100, 3),
+                "units_held":    units_held,
+                "holding_value": holding_val,
+                "members":       members_out,
+            })
+    return jsonify(out)
+
+@app.route("/api/etf/buy", methods=["POST"])
+def etf_buy():
+    body    = request.json or {}
+    uid     = body.get("user_id", "")
+    fund_id = body.get("fund_id", "")
+    units   = max(1, int(body.get("units", 1)))
+    if fund_id not in ETF_FUNDS:
+        return jsonify({"error": "Unknown fund"}), 400
+    with lock:
+        u = market["users"].get(uid)
+        if not u: return jsonify({"error": "User not found"}), 404
+        _ensure_user_fields(u)
+        nav  = compute_etf_nav(fund_id)
+        cost = round(nav * units, 4)
+        if u["arm_bucks"] < cost:
+            return jsonify({"error": f"Need ₳{cost:.2f}, you have ₳{u['arm_bucks']:.2f}"}), 400
+        u["arm_bucks"] -= cost
+        u["etf_portfolio"][fund_id] = u["etf_portfolio"].get(fund_id, 0) + units
+        save(market)
+    return jsonify({"success": True, "units": units, "cost": cost,
+                    "nav": nav, "arm_bucks": round(u["arm_bucks"], 4),
+                    "units_held": u["etf_portfolio"][fund_id]})
+
+@app.route("/api/etf/sell", methods=["POST"])
+def etf_sell():
+    body    = request.json or {}
+    uid     = body.get("user_id", "")
+    fund_id = body.get("fund_id", "")
+    units   = max(1, int(body.get("units", 1)))
+    if fund_id not in ETF_FUNDS:
+        return jsonify({"error": "Unknown fund"}), 400
+    with lock:
+        u = market["users"].get(uid)
+        if not u: return jsonify({"error": "User not found"}), 404
+        _ensure_user_fields(u)
+        owned = u["etf_portfolio"].get(fund_id, 0)
+        if units > owned:
+            return jsonify({"error": f"You only hold {owned} units"}), 400
+        nav      = compute_etf_nav(fund_id)
+        proceeds = round(nav * units, 4)
+        u["arm_bucks"] += proceeds
+        u["etf_portfolio"][fund_id] -= units
+        save(market)
+    return jsonify({"success": True, "units": units, "proceeds": proceeds,
+                    "nav": nav, "arm_bucks": round(u["arm_bucks"], 4),
+                    "units_held": u["etf_portfolio"][fund_id]})
+
+# ─────────────────────────── CHARTS ───────────────────────────
+
+@app.route("/api/charts")
+def get_charts():
+    """Return normalised price history (% from IPO) for all stocks."""
+    with lock:
+        out = {}
+        for ticker, s in market["stocks"].items():
+            hist = s["price_history"][-60:]   # last 60 data points
+            ipo  = s["ipo_price"]
+            out[ticker] = {
+                "name":   s["name"],
+                "color":  "#00ff88" if s["current_price"] >= ipo else "#ff2255",
+                "points": [round((p["price"] - ipo) / ipo * 100, 2) for p in hist],
+            }
+        return jsonify(out)
+
 # ─────────────────────────── ADMIN ────────────────────────────
 
 @app.route("/api/admin/event", methods=["POST"])
@@ -907,13 +1090,17 @@ def leaderboard():
                 for sk in u.get("shiny_portfolio", {})
                 if sk in reg and reg[sk]["base_ticker"] in market["stocks"]
             )
+            etf_v = sum(
+                u.get("etf_portfolio", {}).get(fid, 0) * compute_etf_nav(fid)
+                for fid in ETF_FUNDS
+            )
             fut_locked  = sum(f["cost"]   for f in u.get("futures", [])         if f["status"] == "active")
             pred_locked = sum(b["amount"] for b in u.get("prediction_bets", []) if b["status"] == "pending")
             rows.append({
                 "username":        u["username"],
                 "arm_bucks":       round(u["arm_bucks"], 2),
-                "portfolio_value": round(pv + shiny_v, 2),
-                "total":           round(u["arm_bucks"] + pv + shiny_v + fut_locked + pred_locked, 2),
+                "portfolio_value": round(pv + shiny_v + etf_v, 2),
+                "total":           round(u["arm_bucks"] + pv + shiny_v + etf_v + fut_locked + pred_locked, 2),
             })
         rows.sort(key=lambda x: x["total"], reverse=True)
     return jsonify(rows)
@@ -960,15 +1147,25 @@ def background_loop():
                                                    "volume": 0, "type": "drift"})
                     market["last_drift"] = n.isoformat()
 
-                # ── Dividends ──
+                # ── Stock & ETF Dividends (hourly) ──
                 last_div = datetime.fromisoformat(market.get("last_dividend", n.isoformat()))
                 if (n - last_div).total_seconds() >= DIV_INTERVAL:
                     for uid, u in market["users"].items():
+                        _ensure_user_fields(u)
+                        # Stock dividends (only on profitable stocks)
                         for ticker, shares in u.get("portfolio", {}).items():
                             if shares > 0 and ticker in market["stocks"]:
                                 s = market["stocks"][ticker]
                                 if s["current_price"] > s["ipo_price"]:
                                     u["arm_bucks"] += shares * s["current_price"] * 0.001
+                        # ETF dividends — rate scales with fund performance
+                        for fund_id, units in u.get("etf_portfolio", {}).items():
+                            if units <= 0: continue
+                            nav        = compute_etf_nav(fund_id)
+                            perf_ratio = nav / ETF_START_PRICE
+                            div_rate   = max(ETF_MIN_DIV_RATE, min(ETF_MAX_DIV_RATE,
+                                             ETF_BASE_DIV_RATE * (perf_ratio ** 0.5)))
+                            u["arm_bucks"] += round(units * nav * div_rate, 4)
                     market["last_dividend"] = n.isoformat()
 
                 save(market)
