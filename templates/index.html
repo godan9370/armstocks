@@ -666,6 +666,43 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 .fund-holding { font-size:.85rem; color:var(--dim); margin-left:auto; text-align:right; }
 .fund-div-info { padding:8px 18px 14px; font-size:.8rem; color:var(--dim);
   border-top:1px solid rgba(255,255,255,.04); }
+
+/* SHINY RESALE MARKET */
+.resale-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
+.resale-card { border-radius:8px; overflow:hidden; display:flex; flex-direction:column; }
+.resale-card-header { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+.resale-card-img { width:52px; height:52px; object-fit:cover; border-radius:6px; }
+.resale-card-info { flex:1; min-width:0; }
+.resale-card-name { font-size:1.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.resale-card-tier { font-size:.75rem; letter-spacing:.08em; }
+.resale-card-prices { display:flex; gap:16px; padding:8px 14px;
+  border-top:1px solid rgba(255,255,255,.06); font-size:.9rem; }
+.resale-card-offers { padding:8px 14px; border-top:1px solid rgba(255,255,255,.06); }
+.offer-row { display:flex; align-items:center; justify-content:space-between;
+  padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:.85rem; gap:8px; }
+.offer-row:last-child { border-bottom:none; }
+.resale-actions { padding:10px 14px; display:flex; gap:8px; flex-wrap:wrap;
+  border-top:1px solid rgba(255,255,255,.06); }
+.resale-price-input { width:90px; padding:6px 8px; background:rgba(0,0,40,.8);
+  border:1px solid var(--dim); color:var(--yellow); font-family:var(--font); font-size:1rem;
+  border-radius:4px; text-align:center; }
+
+/* RADIO ARM */
+.radio-header { display:flex; align-items:center; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+.radio-now-playing { flex:1; min-width:200px; }
+.radio-track-list { display:flex; flex-direction:column; gap:4px; }
+.radio-track { display:flex; align-items:center; gap:12px; padding:8px 12px;
+  border-radius:6px; border:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.02); transition:background .15s; }
+.radio-track:hover { background:rgba(255,255,255,.06); }
+.radio-track-num { width:24px; text-align:right; color:var(--dim); font-size:.85rem; flex-shrink:0; }
+.radio-track-img { width:40px; height:40px; object-fit:cover; border-radius:4px; flex-shrink:0; }
+.radio-track-info { flex:1; min-width:0; }
+.radio-track-name { font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.radio-track-artist { font-size:.8rem; color:var(--dim); }
+.radio-track-dur { font-size:.8rem; color:var(--dim); flex-shrink:0; }
+.radio-track-link { color:var(--green); font-size:.85rem; flex-shrink:0; }
+.radio-empty { text-align:center; padding:60px 20px; color:var(--dim); }
 </style>
 </head>
 <body>
@@ -725,6 +762,8 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <button onclick="showView('funds',this)">💼 FUNDS</button>
   <button onclick="showView('news',this)">📡 NEWS</button>
   <button onclick="showView('leaderboard',this)">★ LEADERS</button>
+  <button onclick="showView('resale',this)">💎 RESALE</button>
+  <button onclick="showView('radio',this)">📻 RADIO</button>
   <button onclick="showView('admin',this)">⚙ ADMIN</button>
 </nav>
 
@@ -911,6 +950,43 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <div id="lbList"></div>
 </div>
 
+<!-- SHINY RESALE MARKET -->
+<div class="view" id="view-resale">
+  <div class="section-title" style="color:var(--gold-c);text-shadow:0 0 8px var(--gold-c)">💎 SHINY RESALE MARKET</div>
+  <p style="color:var(--dim);font-size:.9rem;margin-bottom:8px">
+    Buy and sell rare shiny cards peer-to-peer. Cards are held in escrow when listed.
+    Make an offer — the seller decides whether to accept or decline.
+  </p>
+
+  <!-- List your own shiny for sale -->
+  <div class="admin-section box" style="margin-bottom:24px;padding:16px;border-radius:8px">
+    <h3 style="color:var(--gold-c);border-color:rgba(255,215,0,.3);text-shadow:0 0 8px var(--gold-c)">Sell a Shiny Card</h3>
+    <select id="resaleSellSelect" class="admin-input" style="margin-bottom:8px">
+      <option value="">— Select a shiny you own —</option>
+    </select>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="color:var(--dim);font-size:.9rem">Asking price ₳</span>
+      <input class="resale-price-input" id="resaleAskPrice" type="number" min="0.1" step="0.5" value="5">
+      <button class="btn btn-yellow" onclick="listShinyForSale()">LIST FOR SALE</button>
+    </div>
+  </div>
+
+  <!-- Active listings -->
+  <div id="resaleListings"><div class="empty-state" style="padding:40px">No active listings</div></div>
+</div>
+
+<!-- RADIO ARM -->
+<div class="view" id="view-radio">
+  <div class="section-title" style="color:var(--pink);text-shadow:0 0 8px var(--pink)">📻 RADIO ARM</div>
+  <div id="radioContent">
+    <div class="radio-empty">
+      <div style="font-size:2rem;margin-bottom:12px">🎵</div>
+      <div>No playlist configured.</div>
+      <div style="margin-top:6px;font-size:.85rem">Admin can set a Spotify playlist in ⚙ ADMIN.</div>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN -->
 <div class="view" id="view-admin">
   <div class="section-title" style="color:var(--purple);text-shadow:0 0 8px var(--purple)">⚙ ADMIN</div>
@@ -959,6 +1035,15 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <div class="admin-section">
     <h3>Resolve Predictions</h3>
     <div class="open-pred-list" id="adminOpenPreds"><div class="empty-state" style="padding:20px">No open predictions</div></div>
+  </div>
+
+  <div class="admin-section">
+    <h3>📻 Radio ARM — Spotify Playlist</h3>
+    <p style="color:var(--dim);font-size:.85rem;margin-bottom:10px">
+      Paste a public Spotify playlist URL (e.g. https://open.spotify.com/playlist/…). Requires SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET env vars on Render.
+    </p>
+    <input class="admin-input" id="spotifyPlaylistUrl" placeholder="https://open.spotify.com/playlist/...">
+    <button class="btn btn-admin" style="margin-top:8px" onclick="setSpotifyPlaylist()">SAVE PLAYLIST</button>
   </div>
 </div>
 
@@ -1512,11 +1597,11 @@ async function placePredBet(predId, bet) {
 //  SPIN THE WHEEL
 // ═══════════════════════════════════════════════════════════════
 const WHEEL_SEGS = [
-  { key:'pack',       label:'🃏 PACK',    deg:120.0, color:'#00f5ff', text:'#07071a' },
-  { key:'free_stock', label:'📈 STOCK',   deg:72.0,  color:'#00ff88', text:'#07071a' },
-  { key:'bust',       label:'💀 BUST',    deg:72.0,  color:'#1a0008', text:'#ff2255' },
-  { key:'cash',       label:'₳4 CASH',   deg:36.0,  color:'#ffe600', text:'#07071a' },
-  { key:'spin_again', label:'🔄 AGAIN',   deg:45.6,  color:'#cc00ff', text:'#ffffff' },
+  { key:'pack',       label:'🃏 PACK',    deg:72.0,  color:'#00f5ff', text:'#07071a' },
+  { key:'free_stock', label:'📈 STOCK',   deg:79.2,  color:'#00ff88', text:'#07071a' },
+  { key:'bust',       label:'💀 BUST',    deg:126.0, color:'#1a0008', text:'#ff2255' },
+  { key:'cash',       label:'₳4 CASH',   deg:28.8,  color:'#ffe600', text:'#07071a' },
+  { key:'spin_again', label:'🔄 AGAIN',   deg:39.6,  color:'#cc00ff', text:'#ffffff' },
   { key:'bronze',     label:'🥉 BRONZE',  deg:14.4,  color:'#cd7f32', text:'#ffffff' },
 ];
 let wheelRotation = 0;
@@ -1600,11 +1685,17 @@ async function spinWheel() {
     if (d.error) { toast(d.error, 'err'); wheelSpinning=false; btn.disabled=false; btn.textContent='◈ SPIN ◈'; return; }
   } catch(e) { toast('Network error','err'); wheelSpinning=false; btn.disabled=false; btn.textContent='◈ SPIN ◈'; return; }
 
-  // Animate wheel to land_angle
+  // Animate wheel to land_angle.
+  // Rotating clockwise by A° brings the segment originally at A° (from top, CW) under the pointer.
+  // Account for cumulative wheelRotation so every spin is accurate.
+  function calcDelta(target) {
+    const cur = ((wheelRotation % 360) + 360) % 360;
+    let d = ((target % 360) - cur + 360) % 360;
+    if (d < 20) d += 360; // always make a visible movement at the end
+    return 360 * 5 + d;
+  }
   const landAngle = d.land_angle;
-  // To land pointer (at top=0°) on wheel-angle A, rotate wheel by (360 - A)
-  const targetDelta = 360 * 6 + (360 - landAngle);
-  wheelRotation += targetDelta;
+  wheelRotation += calcDelta(landAngle);
   const canvas = document.getElementById('wheelCanvas');
   canvas.style.transition = `transform 4s cubic-bezier(0.17,0.67,0.12,1.0)`;
   canvas.style.transform  = `rotate(${wheelRotation}deg)`;
@@ -1618,8 +1709,7 @@ async function spinWheel() {
       // Brief pause then show the second spin
       setTimeout(() => {
         const landAngle2 = d.spin_again.land_angle;
-        const targetDelta2 = 360 * 5 + (360 - landAngle2);
-        wheelRotation += targetDelta2;
+        wheelRotation += calcDelta(landAngle2);
         canvas.style.transition = `transform 3.5s cubic-bezier(0.17,0.67,0.12,1.0)`;
         canvas.style.transform  = `rotate(${wheelRotation}deg)`;
         resultBox.className = 'wheel-result-box result-again';
@@ -2093,6 +2183,8 @@ function showView(name, btn) {
   if (name === 'charts')     { fetchAndRenderChart(); }
   if (name === 'funds')      { fetchFunds(); }
   if (name === 'admin')      { loadRecentEvents(); }
+  if (name === 'resale')     { fetchResaleMarket(); }
+  if (name === 'radio')      { fetchRadio(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2425,6 +2517,199 @@ async function sellFund(fundId) {
   armBucks = d.arm_bucks; updateBucksDisplay();
   toast(`Sold ${units} unit(s) for ₳${d.proceeds.toFixed(2)}`);
   fetchFunds();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHINY RESALE MARKET
+// ═══════════════════════════════════════════════════════════════
+const TIER_COLORS = { PLATINUM:'#e8e8ff', GOLD:'#ffd700', SILVER:'#c8c8d0', BRONZE:'#cd7f32' };
+const TIER_BOX = {
+  PLATINUM:'box', GOLD:'box-orange', SILVER:'box', BRONZE:'box-orange'
+};
+
+async function fetchResaleMarket() {
+  if (!userId) return;
+  const r = await fetch(`/api/shiny-market?user_id=${userId}`);
+  const listings = await r.json();
+  renderResaleMarket(listings);
+  populateResaleSellDropdown();
+}
+
+function populateResaleSellDropdown() {
+  // Build list of shinies the user owns that are NOT already listed
+  const sel = document.getElementById('resaleSellSelect');
+  if (!sel) return;
+  // We rely on portfolio data from last fetch; re-read from global shinyData if available
+  fetch(`/api/portfolio?user_id=${userId}`).then(r=>r.json()).then(d => {
+    const shinies = d.shiny_holdings || [];
+    sel.innerHTML = '<option value="">— Select a shiny you own —</option>' +
+      shinies.filter(s => s.qty > 0).map(s =>
+        `<option value="${s.shiny_key}">${s.tier} ${s.name} (×${s.qty}) — ₳${s.price.toFixed(2)}</option>`
+      ).join('');
+  });
+}
+
+function renderResaleMarket(listings) {
+  const el = document.getElementById('resaleListings');
+  if (!listings.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:40px">No active listings — be the first to list a shiny!</div>';
+    return;
+  }
+  el.innerHTML = `<div class="resale-grid">${listings.map(l => renderResaleListing(l)).join('')}</div>`;
+}
+
+function renderResaleListing(l) {
+  const tierCol = TIER_COLORS[l.tier] || '#fff';
+  const myListing = l.is_mine;
+  const offersHtml = l.offers && l.offers.length
+    ? l.offers.filter(o => o.status === 'pending').map(o =>
+        myListing
+          ? `<div class="offer-row">
+               <span style="color:var(--yellow)">₳${o.amount.toFixed(2)}</span>
+               <span style="color:var(--dim)">${o.buyer_name}</span>
+               <button class="btn btn-buy btn-xs" onclick="acceptOffer('${l.id}','${o.id}')">✓ ACCEPT</button>
+               <button class="btn btn-sell btn-xs" onclick="declineOffer('${l.id}','${o.id}')">✕</button>
+             </div>`
+          : `<div class="offer-row"><span style="color:var(--dim)">${o.buyer_name}</span><span style="color:var(--yellow)">₳${o.amount.toFixed(2)}</span></div>`
+      ).join('')
+    : '<div style="color:var(--dim);font-size:.82rem;padding:4px 0">No offers yet</div>';
+
+  const buyerInput = !myListing ? `
+    <div class="resale-actions">
+      <input class="resale-price-input" id="offerAmt_${l.id}" type="number" min="0.1" step="0.5" placeholder="₳ offer">
+      <button class="btn btn-buy" onclick="makeOffer('${l.id}')">MAKE OFFER</button>
+    </div>` : `
+    <div class="resale-actions">
+      <button class="btn btn-sell" onclick="delistCard('${l.id}')">DELIST — RECLAIM CARD</button>
+    </div>`;
+
+  return `<div class="resale-card box" style="border-color:${tierCol}40">
+    <div class="resale-card-header">
+      <img class="resale-card-img" src="/headshots/${encodeURIComponent(l.image)}" onerror="this.style.display='none'">
+      <div class="resale-card-info">
+        <div class="resale-card-name">${l.name}</div>
+        <div class="resale-card-tier" style="color:${tierCol}">${l.tier} · ${l.multiplier}×</div>
+        <div style="font-size:.75rem;color:var(--dim)">${l.seller_name}${myListing?' (you)':''}</div>
+      </div>
+    </div>
+    <div class="resale-card-prices">
+      <div><div style="color:var(--dim);font-size:.75rem">ASKING</div><div style="color:var(--yellow)">₳${l.asking_price.toFixed(2)}</div></div>
+      ${l.current_value ? `<div><div style="color:var(--dim);font-size:.75rem">CURR VALUE</div><div style="color:var(--cyan)">₳${l.current_value.toFixed(2)}</div></div>` : ''}
+    </div>
+    <div class="resale-card-offers">${offersHtml}</div>
+    ${buyerInput}
+  </div>`;
+}
+
+async function listShinyForSale() {
+  if (!userId) return;
+  const sk    = document.getElementById('resaleSellSelect').value;
+  const price = parseFloat(document.getElementById('resaleAskPrice').value);
+  if (!sk)       { toast('Select a shiny card', 'err'); return; }
+  if (!price || price <= 0) { toast('Enter a valid price', 'err'); return; }
+  const r = await fetch('/api/shiny-market/list', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, shiny_key: sk, asking_price: price})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast('Listed! Card is now in escrow.');
+  fetchResaleMarket();
+}
+
+async function makeOffer(listingId) {
+  if (!userId) return;
+  const amt = parseFloat(document.getElementById(`offerAmt_${listingId}`)?.value);
+  if (!amt || amt <= 0) { toast('Enter an offer amount', 'err'); return; }
+  const r = await fetch('/api/shiny-market/offer', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, listing_id: listingId, amount: amt})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  armBucks = d.arm_bucks; updateBucksDisplay();
+  toast(`Offer of ₳${amt.toFixed(2)} placed — funds locked until accepted/declined`);
+  fetchResaleMarket();
+}
+
+async function acceptOffer(listingId, offerId) {
+  const r = await fetch('/api/shiny-market/accept', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, listing_id: listingId, offer_id: offerId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  armBucks = d.arm_bucks; updateBucksDisplay();
+  toast('Offer accepted — card transferred, ₳ received!');
+  fetchResaleMarket();
+}
+
+async function declineOffer(listingId, offerId) {
+  const r = await fetch('/api/shiny-market/decline', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, listing_id: listingId, offer_id: offerId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast("Offer declined — buyer's funds returned");
+  fetchResaleMarket();
+}
+
+async function delistCard(listingId) {
+  if (!confirm('Remove listing and reclaim your card?')) return;
+  const r = await fetch('/api/shiny-market/delist', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, listing_id: listingId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast('Listing removed — card returned to your portfolio');
+  fetchResaleMarket();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RADIO ARM
+// ═══════════════════════════════════════════════════════════════
+async function fetchRadio() {
+  const el = document.getElementById('radioContent');
+  if (!el) return;
+  el.innerHTML = '<div class="radio-empty">⟳ Loading playlist…</div>';
+  const r = await fetch('/api/radio');
+  const d = await r.json();
+  if (d.error === 'no_playlist') {
+    el.innerHTML = `<div class="radio-empty"><div style="font-size:2rem;margin-bottom:12px">🎵</div>No playlist configured.<div style="margin-top:6px;font-size:.85rem">Admin can set a Spotify playlist in ⚙ ADMIN.</div></div>`;
+    return;
+  }
+  if (d.error === 'no_spotify_credentials') {
+    el.innerHTML = `<div class="radio-empty"><div style="font-size:2rem;margin-bottom:12px">🔑</div>Spotify credentials not set.<div style="margin-top:6px;font-size:.85rem">Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET as environment variables on Render.</div></div>`;
+    return;
+  }
+  if (!d.tracks || !d.tracks.length) {
+    el.innerHTML = `<div class="radio-empty">Playlist is empty or couldn't be loaded.</div>`;
+    return;
+  }
+  const ms2min = ms => `${Math.floor(ms/60000)}:${String(Math.floor((ms%60000)/1000)).padStart(2,'0')}`;
+  el.innerHTML = `
+    <div class="radio-header">
+      <div class="radio-now-playing">
+        <div style="color:var(--dim);font-size:.85rem;margin-bottom:4px">PLAYLIST</div>
+        <a href="${d.playlist_url}" target="_blank" style="color:var(--green);font-size:1rem">Open in Spotify ↗</a>
+      </div>
+      <div style="color:var(--dim);font-size:.85rem">${d.tracks.length} tracks</div>
+    </div>
+    <div class="radio-track-list">
+      ${d.tracks.map((t,i) => `
+        <div class="radio-track">
+          <div class="radio-track-num">${i+1}</div>
+          ${t.image ? `<img class="radio-track-img" src="${t.image}" alt="">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,.05);border-radius:4px;flex-shrink:0"></div>'}
+          <div class="radio-track-info">
+            <div class="radio-track-name">${t.name}</div>
+            <div class="radio-track-artist">${t.artist}</div>
+          </div>
+          <div class="radio-track-dur">${ms2min(t.duration_ms)}</div>
+          ${t.spotify_url ? `<a class="radio-track-link" href="${t.spotify_url}" target="_blank">▶</a>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
+
+async function setSpotifyPlaylist() {
+  const pw  = document.getElementById('adminPw').value;
+  const url = document.getElementById('spotifyPlaylistUrl').value.trim();
+  const r = await fetch('/api/admin/radio/set-playlist', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({password: pw, playlist_url: url})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast('Playlist saved!');
 }
 </script>
 </body>

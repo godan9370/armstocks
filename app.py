@@ -3,7 +3,7 @@
 """
 
 from flask import Flask, request, jsonify, send_from_directory, render_template
-import json, os, random, threading, time, uuid
+import json, os, random, threading, time, uuid, requests as http_requests
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -15,6 +15,18 @@ HEADSHOTS_DIR  = _static_hs if os.path.isdir(_static_hs) else \
                  os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 DATA_FILE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.json")
+
+# PostgreSQL — set DATABASE_URL on Render for persistent storage.
+# Falls back to local JSON file if not set (local dev / testing).
+_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+if _DATABASE_URL.startswith("postgres://"):
+    _DATABASE_URL = _DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Spotify — optional. Set SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET on Render.
+SPOTIFY_CLIENT_ID     = os.environ.get("SPOTIFY_CLIENT_ID", "")
+SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "")
+_spotify_token        = None
+_spotify_token_expiry = 0
 ADMIN_PASSWORD = "armbets"
 IPO_PRICE      = 1.0
 STARTING_BUCKS = 30.0
@@ -47,22 +59,23 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 # ── Spin the Wheel ──
 WHEEL_COST = 2.0
-# (outcome_name, weight_out_of_150)
+# (outcome_name, weight_out_of_100)  — must sum to 100
 WHEEL_OUTCOMES = [
-    ("pack",       50),   # 33.3%  — full booster pack
-    ("free_stock", 30),   # 20.0%  — 1 random stock share
-    ("bust",       30),   # 20.0%  — lose the ₳2
-    ("cash",       15),   # 10.0%  — ₳4 back
-    ("spin_again", 19),   # 12.7%  — free re-spin (auto-resolved)
-    ("bronze",      6),   # 4.0%   — bronze shiny card
+    ("pack",       20),   # 20.0%  — full booster pack   (was 33%)
+    ("free_stock", 22),   # 22.0%  — 1 random stock share
+    ("bust",       35),   # 35.0%  — lose the ₳2         (was 20%)
+    ("cash",        8),   #  8.0%  — ₳4 back             (was 10%)
+    ("spin_again", 11),   # 11.0%  — free re-spin (auto)
+    ("bronze",      4),   #  4.0%  — bronze shiny card   (unchanged)
 ]
 # Visual segment arc ranges (° from top, clockwise) — must match frontend
+# pack=72° · free_stock=79.2° · bust=126° · cash=28.8° · spin_again=39.6° · bronze=14.4°
 WHEEL_ANGLE_RANGES = {
-    "pack":       (0,     120.0),
-    "free_stock": (120.0, 192.0),
-    "bust":       (192.0, 264.0),
-    "cash":       (264.0, 300.0),
-    "spin_again": (300.0, 345.6),
+    "pack":       (0,     72.0),
+    "free_stock": (72.0,  151.2),
+    "bust":       (151.2, 277.2),
+    "cash":       (277.2, 306.0),
+    "spin_again": (306.0, 345.6),
     "bronze":     (345.6, 360.0),
 }
 
@@ -274,28 +287,87 @@ def pred_odds(p):
     return yes_mult, no_mult
 
 # ─────────────────────────── DATA I/O ─────────────────────────
+def _get_db_conn():
+    """Return a psycopg2 connection if DATABASE_URL is set, else None."""
+    if not _DATABASE_URL:
+        return None
+    try:
+        import psycopg2
+        conn = psycopg2.connect(_DATABASE_URL)
+        return conn
+    except Exception as e:
+        print(f"  [DB] connect error: {e}")
+        return None
+
+def _db_init_table(conn):
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS market_state (
+            id   INTEGER PRIMARY KEY,
+            data TEXT NOT NULL
+        );
+    """)
+    conn.commit()
+    cur.close()
+
 def save(data):
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=2, default=str)
+    payload = json.dumps(data, default=str)
+    conn = _get_db_conn()
+    if conn:
+        try:
+            _db_init_table(conn)
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO market_state (id, data) VALUES (1, %s)
+                ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data;
+            """, (payload,))
+            conn.commit()
+            cur.close()
+        except Exception as e:
+            print(f"  [DB] save error: {e}")
+        finally:
+            conn.close()
+    else:
+        # Fallback: local JSON file (local dev / no DATABASE_URL)
+        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+        with open(DATA_FILE, "w") as f:
+            f.write(payload)
 
 def load():
-    if os.path.exists(DATA_FILE):
+    conn = _get_db_conn()
+    if conn:
         try:
-            with open(DATA_FILE, "r") as f:
-                d = json.load(f)
-                return d if d else None
-        except Exception:
+            _db_init_table(conn)
+            cur = conn.cursor()
+            cur.execute("SELECT data FROM market_state WHERE id = 1;")
+            row = cur.fetchone()
+            cur.close()
+            return json.loads(row[0]) if row else None
+        except Exception as e:
+            print(f"  [DB] load error: {e}")
             return None
-    return None
+        finally:
+            conn.close()
+    else:
+        if os.path.exists(DATA_FILE):
+            try:
+                with open(DATA_FILE, "r") as f:
+                    d = json.load(f)
+                    return d if d else None
+            except Exception:
+                return None
+        return None
 
 def init_market():
     existing = load()
     if existing:
         # Back-compat: add new top-level keys if missing
-        if "predictions"    not in existing: existing["predictions"]    = []
-        if "shiny_registry" not in existing: existing["shiny_registry"] = {}
+        if "predictions"      not in existing: existing["predictions"]      = []
+        if "shiny_registry"   not in existing: existing["shiny_registry"]   = {}
         if "etf_dividends_paid" not in existing: existing["etf_dividends_paid"] = 0.0
+        if "shiny_listings"   not in existing: existing["shiny_listings"]   = []
+        if "radio_playlist"   not in existing: existing["radio_playlist"]   = ""
+        save(existing)   # persist any new keys immediately
         return existing
 
     # Build a deduplicated name→filename map (prefer .jpg/.jpeg over .png/others)
@@ -340,6 +412,8 @@ def init_market():
         "events":         [],
         "predictions":    [],
         "shiny_registry": {},   # shiny_key → {base_ticker, name, image, tier, multiplier}
+        "shiny_listings": [],   # peer-to-peer resale listings
+        "radio_playlist": "",   # Spotify playlist URL set by admin
     }
     save(data)
     print(f"  → Initialised {len(stocks)} stocks from headshots")
@@ -1153,6 +1227,251 @@ def get_charts():
                 "points": [round((p["price"] - ipo) / ipo * 100, 2) for p in hist],
             }
         return jsonify(out)
+
+# ─────────────────────────── SHINY RESALE MARKET ──────────────
+
+@app.route("/api/shiny-market")
+def shiny_market_list():
+    """Return all active listings with their offers."""
+    uid = request.args.get("user_id", "")
+    with lock:
+        reg = market.get("shiny_registry", {})
+        out = []
+        for listing in market.get("shiny_listings", []):
+            if listing["status"] != "active":
+                continue
+            base = market["stocks"].get(listing["base_ticker"])
+            current_price = round(base["current_price"] * listing["multiplier"], 4) if base else None
+            out.append({**listing, "current_value": current_price,
+                        "is_mine": listing["seller_id"] == uid})
+        return jsonify(out)
+
+@app.route("/api/shiny-market/list", methods=["POST"])
+def shiny_market_create_listing():
+    """Seller lists a shiny card. Card is held in escrow until sold/delisted."""
+    body        = request.json or {}
+    uid         = body.get("user_id", "")
+    shiny_key   = body.get("shiny_key", "")
+    asking_price = float(body.get("asking_price", 0))
+    if asking_price <= 0:
+        return jsonify({"error": "Asking price must be > 0"}), 400
+    with lock:
+        u = market["users"].get(uid)
+        if not u: return jsonify({"error": "User not found"}), 404
+        _ensure_user_fields(u)
+        owned = u["shiny_portfolio"].get(shiny_key, 0)
+        if owned < 1:
+            return jsonify({"error": "You don't own this shiny card"}), 400
+        info = market.get("shiny_registry", {}).get(shiny_key)
+        if not info: return jsonify({"error": "Shiny type not found"}), 404
+        # Check not already listed
+        already = [l for l in market["shiny_listings"]
+                   if l["shiny_key"] == shiny_key and l["seller_id"] == uid and l["status"] == "active"]
+        if already:
+            return jsonify({"error": "You already have an active listing for this card"}), 400
+        # Move card to escrow (deduct from portfolio)
+        u["shiny_portfolio"][shiny_key] -= 1
+        listing = {
+            "id":            str(uuid.uuid4()),
+            "seller_id":     uid,
+            "seller_name":   u["username"],
+            "shiny_key":     shiny_key,
+            "base_ticker":   info["base_ticker"],
+            "name":          info["name"],
+            "image":         info["image"],
+            "tier":          info["tier"],
+            "multiplier":    info["multiplier"],
+            "asking_price":  round(asking_price, 2),
+            "listed_at":     now_iso(),
+            "status":        "active",
+            "offers":        [],
+        }
+        market["shiny_listings"].append(listing)
+        save(market)
+    return jsonify({"success": True, "listing": listing})
+
+@app.route("/api/shiny-market/delist", methods=["POST"])
+def shiny_market_delist():
+    """Seller removes their listing — card is returned from escrow."""
+    body       = request.json or {}
+    uid        = body.get("user_id", "")
+    listing_id = body.get("listing_id", "")
+    with lock:
+        u = market["users"].get(uid)
+        if not u: return jsonify({"error": "User not found"}), 404
+        listing = next((l for l in market["shiny_listings"] if l["id"] == listing_id), None)
+        if not listing: return jsonify({"error": "Listing not found"}), 404
+        if listing["seller_id"] != uid: return jsonify({"error": "Not your listing"}), 403
+        if listing["status"] != "active": return jsonify({"error": "Listing is not active"}), 400
+        listing["status"] = "delisted"
+        # Return card from escrow
+        _ensure_user_fields(u)
+        u["shiny_portfolio"][listing["shiny_key"]] = u["shiny_portfolio"].get(listing["shiny_key"], 0) + 1
+        save(market)
+    return jsonify({"success": True})
+
+@app.route("/api/shiny-market/offer", methods=["POST"])
+def shiny_market_offer():
+    """Buyer makes an offer. Amount is locked immediately."""
+    body       = request.json or {}
+    uid        = body.get("user_id", "")
+    listing_id = body.get("listing_id", "")
+    amount     = float(body.get("amount", 0))
+    if amount <= 0: return jsonify({"error": "Offer must be > 0"}), 400
+    with lock:
+        u = market["users"].get(uid)
+        if not u: return jsonify({"error": "User not found"}), 404
+        listing = next((l for l in market["shiny_listings"] if l["id"] == listing_id), None)
+        if not listing: return jsonify({"error": "Listing not found"}), 404
+        if listing["status"] != "active": return jsonify({"error": "Listing is no longer active"}), 400
+        if listing["seller_id"] == uid: return jsonify({"error": "You can't offer on your own listing"}), 400
+        # Check already has pending offer
+        existing = next((o for o in listing["offers"] if o["buyer_id"] == uid and o["status"] == "pending"), None)
+        if existing: return jsonify({"error": "You already have a pending offer on this listing"}), 400
+        _ensure_user_fields(u)
+        if u["arm_bucks"] < amount:
+            return jsonify({"error": f"Need ₳{amount:.2f}, you have ₳{u['arm_bucks']:.2f}"}), 400
+        u["arm_bucks"] -= amount   # lock funds
+        offer = {
+            "id":          str(uuid.uuid4()),
+            "buyer_id":    uid,
+            "buyer_name":  u["username"],
+            "amount":      round(amount, 2),
+            "offered_at":  now_iso(),
+            "status":      "pending",
+        }
+        listing["offers"].append(offer)
+        save(market)
+    return jsonify({"success": True, "offer": offer, "arm_bucks": round(u["arm_bucks"], 4)})
+
+@app.route("/api/shiny-market/accept", methods=["POST"])
+def shiny_market_accept():
+    """Seller accepts an offer — card transfers, funds released."""
+    body       = request.json or {}
+    uid        = body.get("user_id", "")
+    listing_id = body.get("listing_id", "")
+    offer_id   = body.get("offer_id", "")
+    with lock:
+        u = market["users"].get(uid)
+        if not u: return jsonify({"error": "User not found"}), 404
+        listing = next((l for l in market["shiny_listings"] if l["id"] == listing_id), None)
+        if not listing: return jsonify({"error": "Listing not found"}), 404
+        if listing["seller_id"] != uid: return jsonify({"error": "Not your listing"}), 403
+        offer = next((o for o in listing["offers"] if o["id"] == offer_id), None)
+        if not offer: return jsonify({"error": "Offer not found"}), 404
+        if offer["status"] != "pending": return jsonify({"error": "Offer is no longer pending"}), 400
+        buyer = market["users"].get(offer["buyer_id"])
+        if not buyer: return jsonify({"error": "Buyer not found"}), 404
+        _ensure_user_fields(buyer)
+        # Transfer card to buyer
+        sk = listing["shiny_key"]
+        buyer["shiny_portfolio"][sk] = buyer["shiny_portfolio"].get(sk, 0) + 1
+        # Pay seller (funds already locked from buyer)
+        u["arm_bucks"] += offer["amount"]
+        # Close listing and mark other offers declined (refund their locked funds)
+        offer["status"] = "accepted"
+        listing["status"] = "sold"
+        for o in listing["offers"]:
+            if o["id"] != offer_id and o["status"] == "pending":
+                o["status"] = "declined"
+                refund_buyer = market["users"].get(o["buyer_id"])
+                if refund_buyer:
+                    refund_buyer["arm_bucks"] += o["amount"]
+        save(market)
+    return jsonify({"success": True, "arm_bucks": round(u["arm_bucks"], 4)})
+
+@app.route("/api/shiny-market/decline", methods=["POST"])
+def shiny_market_decline():
+    """Seller declines an offer — buyer's funds are returned."""
+    body       = request.json or {}
+    uid        = body.get("user_id", "")
+    listing_id = body.get("listing_id", "")
+    offer_id   = body.get("offer_id", "")
+    with lock:
+        u = market["users"].get(uid)
+        if not u: return jsonify({"error": "User not found"}), 404
+        listing = next((l for l in market["shiny_listings"] if l["id"] == listing_id), None)
+        if not listing: return jsonify({"error": "Listing not found"}), 404
+        if listing["seller_id"] != uid: return jsonify({"error": "Not your listing"}), 403
+        offer = next((o for o in listing["offers"] if o["id"] == offer_id), None)
+        if not offer or offer["status"] != "pending":
+            return jsonify({"error": "Offer not found or not pending"}), 404
+        offer["status"] = "declined"
+        # Refund buyer
+        buyer = market["users"].get(offer["buyer_id"])
+        if buyer:
+            buyer["arm_bucks"] += offer["amount"]
+        save(market)
+    return jsonify({"success": True})
+
+# ─────────────────────────── SPOTIFY / RADIO ──────────────────
+
+def _get_spotify_token():
+    global _spotify_token, _spotify_token_expiry
+    if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+        return None
+    if _spotify_token and time.time() < _spotify_token_expiry - 60:
+        return _spotify_token
+    try:
+        import base64
+        creds   = base64.b64encode(f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}".encode()).decode()
+        resp    = http_requests.post("https://accounts.spotify.com/api/token",
+                    data={"grant_type": "client_credentials"},
+                    headers={"Authorization": f"Basic {creds}"}, timeout=8)
+        data    = resp.json()
+        _spotify_token        = data.get("access_token")
+        _spotify_token_expiry = time.time() + data.get("expires_in", 3600)
+        return _spotify_token
+    except Exception as e:
+        print(f"  [Spotify] token error: {e}")
+        return None
+
+@app.route("/api/radio")
+def get_radio():
+    """Fetch tracks from the configured Spotify playlist."""
+    with lock:
+        playlist_url = market.get("radio_playlist", "")
+    if not playlist_url:
+        return jsonify({"error": "no_playlist", "tracks": []})
+    # Extract playlist ID from URL
+    pid = playlist_url.strip().split("/")[-1].split("?")[0]
+    token = _get_spotify_token()
+    if not token:
+        return jsonify({"error": "no_spotify_credentials", "tracks": []})
+    try:
+        tracks_out = []
+        url = f"https://api.spotify.com/v1/playlists/{pid}/tracks?limit=50&fields=items(track(name,artists,album(name,images),external_urls,preview_url,duration_ms))"
+        headers = {"Authorization": f"Bearer {token}"}
+        while url and len(tracks_out) < 200:
+            resp = http_requests.get(url, headers=headers, timeout=8)
+            data = resp.json()
+            for item in data.get("items", []):
+                t = item.get("track")
+                if not t: continue
+                tracks_out.append({
+                    "name":        t.get("name", ""),
+                    "artist":      ", ".join(a["name"] for a in t.get("artists", [])),
+                    "album":       t.get("album", {}).get("name", ""),
+                    "image":       (t.get("album", {}).get("images") or [{}])[0].get("url", ""),
+                    "preview_url": t.get("preview_url"),
+                    "spotify_url": t.get("external_urls", {}).get("spotify", ""),
+                    "duration_ms": t.get("duration_ms", 0),
+                })
+            url = data.get("next")
+        return jsonify({"tracks": tracks_out, "playlist_url": playlist_url})
+    except Exception as e:
+        return jsonify({"error": str(e), "tracks": []})
+
+@app.route("/api/admin/radio/set-playlist", methods=["POST"])
+def admin_set_playlist():
+    body = request.json or {}
+    if body.get("password") != ADMIN_PASSWORD:
+        return jsonify({"error": "Wrong password"}), 403
+    url = body.get("playlist_url", "").strip()
+    with lock:
+        market["radio_playlist"] = url
+        save(market)
+    return jsonify({"success": True, "playlist_url": url})
 
 # ─────────────────────────── ADMIN ────────────────────────────
 
