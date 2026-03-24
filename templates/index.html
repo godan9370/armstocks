@@ -1033,6 +1033,14 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   </div>
 
   <div class="admin-section">
+    <h3>🪙 Set User Balance</h3>
+    <p style="color:var(--dim);font-size:.85rem;margin-bottom:10px">Manually set a user's ARM Bucks (e.g. to restore after data loss).</p>
+    <input class="admin-input" id="balanceUsername" placeholder="Username (e.g. dan)">
+    <input class="admin-input" id="balanceAmount" type="number" step="0.01" placeholder="New balance (e.g. 15.00)" style="margin-top:8px">
+    <button class="btn btn-admin" style="margin-top:8px" onclick="setUserBalance()">SET BALANCE</button>
+  </div>
+
+  <div class="admin-section">
     <h3>📻 Radio ARM — Spotify Playlist</h3>
     <p style="color:var(--dim);font-size:.85rem;margin-bottom:10px">
       Paste a public Spotify playlist URL (e.g. https://open.spotify.com/playlist/…). Requires SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET env vars on Render.
@@ -2668,6 +2676,18 @@ async function fetchRadio() {
           ${t.spotify_url ? `<a class="radio-track-link" href="${t.spotify_url}" target="_blank">▶</a>` : ''}
         </div>`).join('')}
     </div>`;
+}
+
+async function setUserBalance() {
+  const pw       = document.getElementById('adminPw').value;
+  const username = document.getElementById('balanceUsername').value.trim();
+  const amount   = parseFloat(document.getElementById('balanceAmount').value);
+  if (!username || isNaN(amount)) { toast('Enter username and amount', 'err'); return; }
+  const r = await fetch('/api/admin/set-balance', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({password: pw, username, amount})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast(`✅ ${username} balance set to ₳${amount.toFixed(2)}`);
 }
 
 async function setSpotifyPlaylist() {

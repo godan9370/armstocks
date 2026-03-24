@@ -287,17 +287,24 @@ def pred_odds(p):
     return yes_mult, no_mult
 
 # ─────────────────────────── DATA I/O ─────────────────────────
-def _get_db_conn():
-    """Return a psycopg2 connection if DATABASE_URL is set, else None."""
+def _get_db_conn(retries=3, delay=2):
+    """Return a psycopg2 connection if DATABASE_URL is set, else None.
+    Retries on failure so transient startup errors don't cause data loss."""
     if not _DATABASE_URL:
         return None
-    try:
-        import psycopg2
-        conn = psycopg2.connect(_DATABASE_URL)
-        return conn
-    except Exception as e:
-        print(f"  [DB] connect error: {e}")
-        return None
+    import psycopg2
+    last_err = None
+    for attempt in range(1, retries + 1):
+        try:
+            conn = psycopg2.connect(_DATABASE_URL)
+            return conn
+        except Exception as e:
+            last_err = e
+            print(f"  [DB] connect attempt {attempt}/{retries} failed: {e}")
+            if attempt < retries:
+                time.sleep(delay)
+    # All retries exhausted — raise so callers know DB is unavailable
+    raise RuntimeError(f"[DB] Could not connect after {retries} attempts: {last_err}")
 
 def _db_init_table(conn):
     cur = conn.cursor()
@@ -312,9 +319,9 @@ def _db_init_table(conn):
 
 def save(data):
     payload = json.dumps(data, default=str)
-    conn = _get_db_conn()
-    if conn:
+    if _DATABASE_URL:
         try:
+            conn = _get_db_conn()
             _db_init_table(conn)
             cur = conn.cursor()
             cur.execute("""
@@ -323,32 +330,34 @@ def save(data):
             """, (payload,))
             conn.commit()
             cur.close()
+            conn.close()
         except Exception as e:
             print(f"  [DB] save error: {e}")
-        finally:
-            conn.close()
     else:
-        # Fallback: local JSON file (local dev / no DATABASE_URL)
+        # Local dev fallback: JSON file
         os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
         with open(DATA_FILE, "w") as f:
             f.write(payload)
 
 def load():
-    conn = _get_db_conn()
-    if conn:
+    if _DATABASE_URL:
+        # DATABASE_URL is set — ONLY use Postgres. Never fall back to JSON file
+        # (the JSON file has stale/empty state and would cause a data reset).
         try:
+            conn = _get_db_conn()
             _db_init_table(conn)
             cur = conn.cursor()
             cur.execute("SELECT data FROM market_state WHERE id = 1;")
             row = cur.fetchone()
             cur.close()
+            conn.close()
             return json.loads(row[0]) if row else None
         except Exception as e:
-            print(f"  [DB] load error: {e}")
-            return None
-        finally:
-            conn.close()
+            # Re-raise so init_market() does NOT create fresh data.
+            # Render will restart the app and retry.
+            raise RuntimeError(f"[DB] load failed: {e}")
     else:
+        # Local dev — use JSON file
         if os.path.exists(DATA_FILE):
             try:
                 with open(DATA_FILE, "r") as f:
@@ -1507,6 +1516,28 @@ def admin_phase():
         market["phase"] = phase
         save(market)
     return jsonify({"success": True, "phase": phase})
+
+@app.route("/api/admin/set-balance", methods=["POST"])
+def admin_set_balance():
+    """Admin: manually set a user's armbucks balance (e.g. to restore after data loss)."""
+    body = request.json or {}
+    if body.get("password") != ADMIN_PASSWORD:
+        return jsonify({"error": "Wrong password"}), 403
+    username = body.get("username", "").strip()
+    amount   = body.get("amount")
+    if not username or amount is None:
+        return jsonify({"error": "username and amount required"}), 400
+    try:
+        amount = float(amount)
+    except (TypeError, ValueError):
+        return jsonify({"error": "amount must be a number"}), 400
+    with lock:
+        uid = username.lower()
+        if uid not in market["users"]:
+            return jsonify({"error": f"User '{username}' not found"}), 404
+        market["users"][uid]["armbucks"] = round(amount, 4)
+        save(market)
+    return jsonify({"success": True, "username": username, "armbucks": amount})
 
 @app.route("/api/admin/reset", methods=["POST"])
 def admin_reset():
