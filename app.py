@@ -1377,6 +1377,37 @@ def _get_spotify_token():
         print(f"  [Spotify] token error: {e}")
         return None
 
+@app.route("/api/db-status")
+def db_status():
+    """Diagnostic: test DB connection and show what's stored."""
+    result = {"database_url_set": bool(_DATABASE_URL), "connected": False, "has_data": False, "user_count": 0, "error": None}
+    if not _DATABASE_URL:
+        result["error"] = "DATABASE_URL not set — using local JSON file"
+        return jsonify(result)
+    try:
+        conn = _get_db_conn()
+        if not conn:
+            result["error"] = "Connection returned None"
+            return jsonify(result)
+        result["connected"] = True
+        _db_init_table(conn)
+        cur = conn.cursor()
+        cur.execute("SELECT data FROM market_state WHERE id = 1;")
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            result["has_data"] = True
+            data = json.loads(row[0])
+            result["user_count"] = len(data.get("users", {}))
+            result["phase"] = data.get("phase")
+            result["users"] = list(data.get("users", {}).keys())
+        else:
+            result["error"] = "No row in DB yet — market not saved"
+    except Exception as e:
+        result["error"] = str(e)
+    return jsonify(result)
+
 @app.route("/api/radio/debug")
 def radio_debug():
     """Public debug endpoint — shows config state without exposing secrets."""
