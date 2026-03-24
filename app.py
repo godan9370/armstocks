@@ -287,24 +287,17 @@ def pred_odds(p):
     return yes_mult, no_mult
 
 # ─────────────────────────── DATA I/O ─────────────────────────
-def _get_db_conn(retries=3, delay=2):
-    """Return a psycopg2 connection if DATABASE_URL is set, else None.
-    Retries on failure so transient startup errors don't cause data loss."""
+def _get_db_conn():
+    """Return a psycopg2 connection if DATABASE_URL is set, else None."""
     if not _DATABASE_URL:
         return None
-    import psycopg2
-    last_err = None
-    for attempt in range(1, retries + 1):
-        try:
-            conn = psycopg2.connect(_DATABASE_URL)
-            return conn
-        except Exception as e:
-            last_err = e
-            print(f"  [DB] connect attempt {attempt}/{retries} failed: {e}")
-            if attempt < retries:
-                time.sleep(delay)
-    # All retries exhausted — raise so callers know DB is unavailable
-    raise RuntimeError(f"[DB] Could not connect after {retries} attempts: {last_err}")
+    try:
+        import psycopg2
+        conn = psycopg2.connect(_DATABASE_URL)
+        return conn
+    except Exception as e:
+        print(f"  [DB] connect error: {e}")
+        return None
 
 def _db_init_table(conn):
     cur = conn.cursor()
@@ -319,9 +312,9 @@ def _db_init_table(conn):
 
 def save(data):
     payload = json.dumps(data, default=str)
-    if _DATABASE_URL:
+    conn = _get_db_conn()
+    if conn:
         try:
-            conn = _get_db_conn()
             _db_init_table(conn)
             cur = conn.cursor()
             cur.execute("""
@@ -330,34 +323,35 @@ def save(data):
             """, (payload,))
             conn.commit()
             cur.close()
-            conn.close()
         except Exception as e:
             print(f"  [DB] save error: {e}")
-    else:
-        # Local dev fallback: JSON file
+        finally:
+            conn.close()
+    elif not _DATABASE_URL:
+        # Local dev only — JSON file fallback
         os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
         with open(DATA_FILE, "w") as f:
             f.write(payload)
+    else:
+        print("  [DB] WARNING: DATABASE_URL set but connection failed — save skipped to avoid data loss")
 
 def load():
-    if _DATABASE_URL:
-        # DATABASE_URL is set — ONLY use Postgres. Never fall back to JSON file
-        # (the JSON file has stale/empty state and would cause a data reset).
+    conn = _get_db_conn()
+    if conn:
         try:
-            conn = _get_db_conn()
             _db_init_table(conn)
             cur = conn.cursor()
             cur.execute("SELECT data FROM market_state WHERE id = 1;")
             row = cur.fetchone()
             cur.close()
-            conn.close()
             return json.loads(row[0]) if row else None
         except Exception as e:
-            # Re-raise so init_market() does NOT create fresh data.
-            # Render will restart the app and retry.
-            raise RuntimeError(f"[DB] load failed: {e}")
-    else:
-        # Local dev — use JSON file
+            print(f"  [DB] load error: {e}")
+            return None
+        finally:
+            conn.close()
+    elif not _DATABASE_URL:
+        # Local dev only — JSON file fallback
         if os.path.exists(DATA_FILE):
             try:
                 with open(DATA_FILE, "r") as f:
@@ -366,16 +360,32 @@ def load():
             except Exception:
                 return None
         return None
+    else:
+        # DATABASE_URL set but connection failed — return sentinel so we don't overwrite with fresh data
+        print("  [DB] WARNING: DATABASE_URL set but connection failed — will not initialise fresh market")
+        return "DB_UNAVAILABLE"
 
 def init_market():
     existing = load()
+    # If DB is configured but unreachable, return a minimal stub rather than
+    # wiping the database with fresh data. Routes will still work; data will
+    # reload from DB once the connection recovers on next save/restart.
+    if existing == "DB_UNAVAILABLE":
+        print("  [DB] Starting with empty stub — DB unavailable at startup. DO NOT overwrite DB.")
+        return {
+            "phase": "ipo", "created": now_iso(), "last_drift": now_iso(),
+            "last_dividend": now_iso(), "users": {}, "stocks": {}, "events": [],
+            "predictions": [], "shiny_registry": {}, "shiny_listings": [],
+            "radio_playlist": "", "etf_dividends_paid": 0.0,
+            "_db_unavailable": True,
+        }
     if existing:
         # Back-compat: add new top-level keys if missing
-        if "predictions"      not in existing: existing["predictions"]      = []
-        if "shiny_registry"   not in existing: existing["shiny_registry"]   = {}
+        if "predictions"        not in existing: existing["predictions"]        = []
+        if "shiny_registry"     not in existing: existing["shiny_registry"]     = {}
         if "etf_dividends_paid" not in existing: existing["etf_dividends_paid"] = 0.0
-        if "shiny_listings"   not in existing: existing["shiny_listings"]   = []
-        if "radio_playlist"   not in existing: existing["radio_playlist"]   = ""
+        if "shiny_listings"     not in existing: existing["shiny_listings"]     = []
+        if "radio_playlist"     not in existing: existing["radio_playlist"]     = ""
         save(existing)   # persist any new keys immediately
         return existing
 
