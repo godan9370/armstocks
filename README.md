@@ -29,4 +29,4 @@ Default password: `armbets` (change in `app.py` line 13)
 
 - Python 3.8+
 - `flask` and `anthropic` packages (`pip install flask anthropic`)
-- Optional: `ANTHROPIC_API_KEY` env var for AI-powered event interpretation 
+- Optional: `ANTHROPIC_API_KEY` env var for AI-powered event interpretation

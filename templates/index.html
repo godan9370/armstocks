@@ -703,6 +703,201 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 .radio-track-dur { font-size:.8rem; color:var(--dim); flex-shrink:0; }
 .radio-track-link { color:var(--green); font-size:.85rem; flex-shrink:0; }
 .radio-empty { text-align:center; padding:60px 20px; color:var(--dim); }
+
+/* ═══════════════ CARD BATTLE ═══════════════ */
+.battle-card {
+  width:100px; flex-shrink:0; border-radius:6px; overflow:hidden; cursor:pointer;
+  border:1px solid var(--dim); background:rgba(0,0,30,.7); transition:all .2s; user-select:none;
+  position:relative;
+}
+.battle-card.selectable:hover { border-color:var(--cyan); transform:translateY(-3px); box-shadow:0 0 12px rgba(0,245,255,.5); }
+.battle-card.selected { border-color:var(--yellow); box-shadow:0 0 12px rgba(255,230,0,.6); }
+.battle-card.attackable { border-color:var(--green); cursor:crosshair; }
+.battle-card.attackable:hover { box-shadow:0 0 14px rgba(0,255,136,.7); }
+.battle-card.targetable { border-color:var(--red); cursor:crosshair; }
+.battle-card.targetable:hover { box-shadow:0 0 14px rgba(255,34,85,.7); }
+.battle-card.sick { opacity:.65; }
+.battle-card.dead { opacity:.3; pointer-events:none; }
+.battle-card img { width:100%; aspect-ratio:1; object-fit:cover; display:block; filter:saturate(.85); }
+.battle-card-body { padding:4px 6px; font-size:.72rem; }
+.battle-card-name { color:var(--cyan); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.7rem; }
+.battle-card-stats { display:flex; justify-content:space-between; margin-top:2px; }
+.battle-card-atk { color:var(--orange); }
+.battle-card-hp  { color:var(--green); }
+.battle-card-tier-badge {
+  position:absolute; top:3px; right:3px; font-size:.6rem; padding:1px 4px; border-radius:3px;
+  background:rgba(0,0,0,.7); letter-spacing:.04em;
+}
+.battle-card-ability { position:absolute; top:3px; left:3px; font-size:.65rem; padding:1px 4px;
+  border-radius:3px; background:rgba(0,255,136,.25); color:var(--green); cursor:pointer; }
+.battle-card-sick-label { position:absolute; bottom:26px; left:0; right:0; text-align:center;
+  font-size:.6rem; color:var(--yellow); background:rgba(0,0,0,.6); padding:1px 0; }
+.battle-card-hp-bar { height:3px; background:rgba(0,0,0,.5); }
+.battle-card-hp-fill { height:3px; background:var(--green); transition:width .3s; }
+
+.hand-card { width:82px; }
+.hand-card:hover { border-color:var(--yellow); }
+
+/* Battle list items */
+.battle-item { padding:12px 16px; border-radius:6px; margin-bottom:8px; border:1px solid var(--dim);
+  background:rgba(0,245,255,.03); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.battle-item.my-turn { border-color:var(--pink); background:rgba(255,0,144,.04);
+  box-shadow:0 0 8px rgba(255,0,144,.2); }
+.battle-item.pending { border-color:var(--yellow); background:rgba(255,230,0,.03); }
+.battle-item-info { flex:1; min-width:120px; }
+.battle-item-opp { font-size:1.1rem; color:var(--cyan); }
+.battle-item-meta { font-size:.8rem; color:var(--dim); }
+
+/* Deck select cards */
+.deck-sel-card { cursor:pointer; position:relative; user-select:none; }
+.deck-sel-card.selected::after {
+  content:'✓'; position:absolute; top:4px; left:4px;
+  background:rgba(255,230,0,.9); color:#000; border-radius:50%;
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  font-size:.85rem; line-height:20px; text-align:center;
+}
+
+/* ═══════════════ BOTTOM NAV (mobile) ═══════════════ */
+#bottom-nav {
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:200;
+  background:rgba(7,7,26,.97); border-top:2px solid var(--pink);
+  box-shadow:0 -4px 24px rgba(255,0,144,.3);
+  height:62px;
+}
+.bnav-inner {
+  display:flex; height:100%;
+}
+.bnav-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; background:none; border:none; border-right:1px solid rgba(255,0,144,.15);
+  color:var(--dim); font-family:var(--font); font-size:.55rem; cursor:pointer;
+  letter-spacing:.04em; gap:3px; transition:all .15s; padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.bnav-btn:last-child { border-right:none; }
+.bnav-btn .bnav-icon { font-size:1.3rem; line-height:1; }
+.bnav-btn.active { color:var(--pink); }
+.bnav-btn.active .bnav-icon { filter:drop-shadow(0 0 6px var(--pink)); }
+.bnav-btn:hover { color:var(--cyan); background:rgba(0,245,255,.06); }
+
+/* MORE drawer */
+#more-drawer {
+  display:none; position:fixed; bottom:62px; left:0; right:0; z-index:199;
+  background:rgba(7,7,26,.97); border-top:1px solid var(--dim);
+  padding:12px 8px; box-shadow:0 -8px 32px rgba(0,0,0,.6);
+}
+#more-drawer.open { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.more-btn {
+  padding:10px 16px; background:rgba(0,245,255,.07); border:1px solid var(--dim);
+  border-radius:6px; color:var(--text); font-family:var(--font); font-size:.9rem;
+  cursor:pointer; letter-spacing:.04em; -webkit-tap-highlight-color:transparent;
+}
+.more-btn:hover { border-color:var(--cyan); color:var(--cyan); }
+
+/* ═══════════════ MOBILE RESPONSIVE ═══════════════ */
+@media (max-width: 768px) {
+  html, body { font-size:16px; }
+
+  /* Show bottom nav, hide top nav */
+  #bottom-nav { display:flex; }
+  nav { display:none !important; }
+
+  /* Content padding for bottom nav */
+  .view { padding:14px 12px 80px; }
+
+  /* Header: compact */
+  .header-top { padding:6px 12px; }
+  .logo { font-size:1.5rem; letter-spacing:.06em; }
+  .bucks-badge { font-size:.95rem; padding:3px 10px; }
+  #phaseBadge { display:none; }
+  #usernameDisplay { font-size:.75rem; }
+
+  /* Ticker: slightly smaller */
+  .ticker-tape { font-size:.8rem; }
+
+  /* Market grid: 2 columns */
+  .market-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stock-card img { aspect-ratio:1; }
+  .card-body { padding:6px 8px; }
+  .card-ticker { font-size:1rem; }
+  .card-price  { font-size:1.2rem; }
+  .card-chg    { font-size:.8rem; }
+
+  /* Section titles */
+  .section-title { font-size:1.3rem; margin-bottom:14px; }
+
+  /* Portfolio */
+  .port-summary { gap:10px; }
+  .port-stat { padding:10px 12px; min-width:110px; }
+  .port-stat .value { font-size:1.5rem; }
+  .holding-row { padding:10px 12px; gap:10px; }
+  .holding-row img { width:44px; height:44px; }
+  .holding-name { font-size:1rem; }
+
+  /* Buttons — larger tap targets */
+  .btn { padding:11px 18px; font-size:1rem; min-height:44px; }
+  .btn-sm { padding:8px 14px; font-size:.9rem; min-height:36px; }
+  .btn-xs { padding:6px 10px; font-size:.8rem; min-height:32px; }
+
+  /* Modal: full screen on mobile */
+  .modal-overlay { align-items:flex-end; }
+  .modal-box { width:100vw; max-height:88vh; border-radius:14px 14px 0 0; padding:20px 16px 32px; }
+
+  /* Stock detail modal */
+  .sd-header { gap:12px; }
+  .sd-headshot { width:80px; height:80px; }
+  .sd-info h2 { font-size:1.6rem; }
+  .sd-info .sd-price { font-size:1.8rem; }
+  .trade-row { gap:8px; }
+  .trade-row input[type=number] { width:80px; font-size:1.1rem; }
+
+  /* Wheel: bigger, centered */
+  .wheel-canvas-wrap { width:300px; height:300px; }
+  #wheelCanvas { width:300px !important; height:300px !important; }
+  .wheel-spin-btn { padding:16px 40px; font-size:1.4rem; }
+  .wheel-result-box { max-width:100%; font-size:1.1rem; }
+
+  /* Shop: single column */
+  .shop-grid { grid-template-columns:1fr; gap:20px; }
+
+  /* Futures: single column */
+  .futures-grid { grid-template-columns:1fr; }
+
+  /* Leaderboard: hide some columns */
+  .lb-header { grid-template-columns:32px 1fr 1fr; }
+  .lb-row    { grid-template-columns:32px 1fr 1fr; }
+  .lb-header > *:nth-child(n+4),
+  .lb-row    > *:nth-child(n+4) { display:none; }
+
+  /* News */
+  .news-item { padding:10px 14px; }
+  .news-summary { font-size:1rem; }
+
+  /* Predictions */
+  .pred-question { font-size:1.1rem; }
+  .pred-odds-bar { flex-wrap:wrap; gap:8px; }
+  .odds-pool { margin-left:0; width:100%; }
+  .pred-vote-row { gap:8px; }
+  .btn-yes, .btn-no { padding:10px 18px; flex:1; font-size:1rem; text-align:center; }
+
+  /* Admin */
+  .admin-input { font-size:1rem; }
+
+  /* Funds */
+  .etf-grid { grid-template-columns:1fr !important; }
+
+  /* Resale */
+  .resale-grid { grid-template-columns:1fr !important; }
+}
+
+@media (max-width: 400px) {
+  .market-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .logo { font-size:1.2rem; }
+  .bucks-badge { font-size:.85rem; }
+  .wheel-canvas-wrap { width:260px; height:260px; }
+  #wheelCanvas { width:260px !important; height:260px !important; }
+}
 </style>
 </head>
 <body>
@@ -751,7 +946,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <div class="ticker-tape"><div class="ticker-inner" id="tickerInner">Loading…</div></div>
 </header>
 
-<!-- NAV -->
+<!-- NAV (desktop) -->
 <nav>
   <button class="active" onclick="showView('market',this)">◈ MARKET</button>
   <button onclick="showView('portfolio',this)">◉ PORTFOLIO</button>
@@ -763,9 +958,44 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <button onclick="showView('news',this)">📡 NEWS</button>
   <button onclick="showView('leaderboard',this)">★ LEADERS</button>
   <button onclick="showView('resale',this)">💎 RESALE</button>
+  <button onclick="showView('battle',this)" id="navBattleBtn">⚔ BATTLE</button>
   <button onclick="showView('radio',this)">📻 RADIO</button>
   <button onclick="showView('admin',this)">⚙ ADMIN</button>
 </nav>
+
+<!-- BOTTOM NAV (mobile) -->
+<div id="bottom-nav">
+  <div class="bnav-inner">
+    <button class="bnav-btn active" id="bnav-market" onclick="showView('market',this);setBottomNav('market')">
+      <span class="bnav-icon">◈</span>MARKET
+    </button>
+    <button class="bnav-btn" id="bnav-portfolio" onclick="showView('portfolio',this);setBottomNav('portfolio')">
+      <span class="bnav-icon">◉</span>PORTFOLIO
+    </button>
+    <button class="bnav-btn" id="bnav-shop" onclick="showView('shop',this);setBottomNav('shop')">
+      <span class="bnav-icon">🃏</span>SHOP
+    </button>
+    <button class="bnav-btn" id="bnav-news" onclick="showView('news',this);setBottomNav('news')">
+      <span class="bnav-icon">📡</span>NEWS
+    </button>
+    <button class="bnav-btn" id="bnav-more" onclick="toggleMoreDrawer()">
+      <span class="bnav-icon">⋯</span>MORE
+    </button>
+  </div>
+</div>
+
+<!-- MORE DRAWER (mobile) -->
+<div id="more-drawer">
+  <button class="more-btn" onclick="showView('battle',this);setBottomNav('battle');closeMoreDrawer()" id="moreBattleBtn">⚔ BATTLE <span id="battleNotifBadge" style="display:none;background:var(--pink);color:#fff;border-radius:50%;padding:0 5px;font-size:.75rem;margin-left:4px">!</span></button>
+  <button class="more-btn" onclick="showView('futures',this);setBottomNav('futures');closeMoreDrawer()">⚡ FUTURES</button>
+  <button class="more-btn" onclick="showView('predictions',this);setBottomNav('predictions');closeMoreDrawer()">🎯 PREDICT</button>
+  <button class="more-btn" onclick="showView('charts',this);setBottomNav('charts');closeMoreDrawer()">📈 CHARTS</button>
+  <button class="more-btn" onclick="showView('funds',this);setBottomNav('funds');closeMoreDrawer()">💼 FUNDS</button>
+  <button class="more-btn" onclick="showView('leaderboard',this);setBottomNav('leaderboard');closeMoreDrawer()">★ LEADERS</button>
+  <button class="more-btn" onclick="showView('resale',this);setBottomNav('resale');closeMoreDrawer()">💎 RESALE</button>
+  <button class="more-btn" onclick="showView('radio',this);setBottomNav('radio');closeMoreDrawer()">📻 RADIO</button>
+  <button class="more-btn" onclick="showView('admin',this);setBottomNav('admin');closeMoreDrawer()">⚙ ADMIN</button>
+</div>
 
 <!-- MARKET -->
 <div class="view active" id="view-market">
@@ -982,6 +1212,106 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   </div>
 </div>
 
+<!-- BATTLE -->
+<div class="view" id="view-battle">
+  <div class="section-title" style="color:var(--pink);text-shadow:0 0 8px var(--pink)">⚔ SUNDAY BEST GOOD BATTLES</div>
+
+  <!-- Lobby -->
+  <div id="battleLobby">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
+      <button class="btn btn-buy" onclick="openChallengeModal()">⚔ CHALLENGE PLAYER</button>
+      <button class="btn btn-cyan btn-sm" onclick="fetchBattleList()">↺ REFRESH</button>
+    </div>
+    <!-- Tier reference -->
+    <div style="margin-bottom:10px;font-size:.82rem;color:var(--dim);line-height:1.8">
+      <span style="color:var(--cyan)">HP TIERS:</span>
+      Director <span style="color:var(--cyan)">30HP</span> ·
+      Assoc Dir <span style="color:var(--yellow)">25HP</span> ·
+      Principal <span style="color:var(--green)">20HP</span> ·
+      General <span style="color:var(--text)">15HP</span> ·
+      Graduate <span style="color:var(--dim)">10HP</span> ·
+      Support <span style="color:var(--red)">5HP</span>
+      &nbsp;|&nbsp;
+      <span style="color:var(--orange)">ATK = stock price × shiny mult</span>
+      &nbsp;|&nbsp;
+      <span style="color:var(--purple)">Max 2 directors per deck</span>
+    </div>
+    <!-- Special effects legend -->
+    <details style="margin-bottom:16px;font-size:.78rem;color:var(--dim)">
+      <summary style="cursor:pointer;color:var(--yellow);font-size:.85rem;margin-bottom:6px">✨ SPECIAL CARD EFFECTS (click to expand)</summary>
+      <div style="line-height:2;padding:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 16px">
+        <div>🚪 <b style="color:var(--text)">Tanya King</b> — Goes home after turn 3</div>
+        <div>😤 <b style="color:var(--text)">Mark + Jesse</b> — 30% chance attack each other</div>
+        <div>👠 <b style="color:var(--text)">Lucy</b> — Admin cards lose 5 HP while she's in play</div>
+        <div>☕ <b style="color:var(--text)">Jenny</b> — Heals all friendly cards +3 HP on play</div>
+        <div>⚡ <b style="color:var(--text)">Renae</b> — No summoning sickness</div>
+        <div>✨ <b style="color:var(--text)">Anita</b> — Restores 1 HP to a random friendly card each turn</div>
+        <div>🌟 <b style="color:var(--text)">Bella</b> — Friendly cards deal +1 bonus damage while she's on board</div>
+        <div>📚 <b style="color:var(--text)">Nadia</b> — Draws 1 extra card when played</div>
+        <div>🐢 <b style="color:var(--text)">Ray</b> — 2-turn summoning sickness instead of 1</div>
+        <div>📋 <b style="color:var(--text)">Tom Jones</b> — 20% chance is 'in a meeting' and can't attack</div>
+        <div>🤦 <b style="color:var(--text)">Ark</b> — Takes 1 self-damage after each attack</div>
+        <div>🎲 <b style="color:var(--text)">Raman</b> — Random good or bad chaos effect each turn</div>
+      </div>
+    </details>
+    <div id="battleListEl"></div>
+  </div>
+
+  <!-- Deck selection -->
+  <div id="battleDeckSelect" style="display:none">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-sell btn-sm" onclick="showBattleLobby()">← BACK</button>
+      <div style="color:var(--yellow);font-size:1.1rem">SELECT YOUR <span id="deckBattleBetDisplay"></span> DECK</div>
+    </div>
+    <div style="color:var(--dim);font-size:.88rem;margin-bottom:6px">Select exactly 10 cards. Max <b style="color:var(--purple)">2 directors</b>. Cards with special effects are highlighted.</div>
+    <div style="margin-bottom:8px;font-size:.95rem">Selected: <span id="deckSelectCount" style="color:var(--yellow)">0</span> / 10 &nbsp;|&nbsp; Directors: <span id="deckDirectorCount" style="color:var(--cyan)">0</span> / 2</div>
+    <div id="deckSelectGrid" class="market-grid"></div>
+    <div style="margin-top:18px;display:flex;gap:10px">
+      <button class="btn btn-buy" id="deckSubmitBtn" onclick="submitDeck()" disabled>SUBMIT DECK (10 cards)</button>
+    </div>
+  </div>
+
+  <!-- Active game board -->
+  <div id="battleGameView" style="display:none">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+      <button class="btn btn-sell btn-sm" onclick="showBattleLobby()">← LOBBY</button>
+      <div id="battleTurnIndicator" style="font-size:1rem;padding:4px 14px;border-radius:4px;border:1px solid var(--cyan);color:var(--cyan)">Loading…</div>
+      <button class="btn btn-yellow btn-sm" id="endTurnBtn" onclick="doEndTurn()" style="display:none">END TURN</button>
+      <button class="btn btn-sell btn-sm" onclick="doForfeit()">FORFEIT</button>
+      <button class="btn btn-cyan btn-sm" onclick="refreshGame()">↺</button>
+    </div>
+
+    <!-- Bet + Log toggle -->
+    <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px;flex-wrap:wrap;font-size:.88rem">
+      <span id="gameBetDisplay" style="color:var(--yellow)"></span>
+      <span id="gameStatusDisplay" style="color:var(--dim)"></span>
+      <button class="btn btn-cyan btn-xs" onclick="toggleBattleLog()">📋 LOG</button>
+    </div>
+    <div id="battleLogBox" style="display:none;max-height:140px;overflow-y:auto;font-size:.78rem;color:var(--dim);background:rgba(0,0,30,.6);border:1px solid var(--dim);border-radius:4px;padding:8px 12px;margin-bottom:12px"></div>
+
+    <!-- Opponent side -->
+    <div style="margin-bottom:6px;font-size:.85rem;color:var(--red)">⚔ OPPONENT BOARD — <span id="oppNameDisplay"></span></div>
+    <div id="oppBoardEl" style="display:flex;gap:8px;flex-wrap:wrap;min-height:90px;padding:10px;background:rgba(255,34,85,.04);border:1px solid rgba(255,34,85,.2);border-radius:6px;margin-bottom:6px"></div>
+    <div style="font-size:.78rem;color:var(--dim);margin-bottom:14px">Opp hand: <span id="oppHandCount">?</span> cards · Deck: <span id="oppDeckCount">?</span></div>
+
+    <!-- My side -->
+    <div style="margin-bottom:6px;font-size:.85rem;color:var(--green)">🛡 YOUR BOARD — <span id="myNameDisplay"></span></div>
+    <div id="myBoardEl" style="display:flex;gap:8px;flex-wrap:wrap;min-height:90px;padding:10px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.2);border-radius:6px;margin-bottom:6px"></div>
+    <div style="font-size:.78rem;color:var(--dim);margin-bottom:14px">Deck: <span id="myDeckCount">?</span> remaining</div>
+
+    <!-- My hand -->
+    <div style="margin-bottom:8px;font-size:.85rem;color:var(--cyan)">🤚 YOUR HAND</div>
+    <div id="myHandEl" style="display:flex;gap:8px;flex-wrap:wrap;min-height:80px;padding:10px;background:rgba(0,245,255,.03);border:1px solid rgba(0,245,255,.2);border-radius:6px"></div>
+
+    <!-- Ability panel -->
+    <div id="abilityPanel" style="display:none;margin-top:14px;padding:12px;background:rgba(0,255,136,.05);border:1px solid var(--green);border-radius:6px">
+      <div style="color:var(--green);margin-bottom:8px">💚 SUPPORT HEAL — select a friendly card to heal +5 HP</div>
+      <div id="abilityTargetList" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      <button class="btn btn-sell btn-xs" style="margin-top:8px" onclick="cancelAbility()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN -->
 <div class="view" id="view-admin">
   <div class="section-title" style="color:var(--purple);text-shadow:0 0 8px var(--purple)">⚙ ADMIN</div>
@@ -990,11 +1320,9 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
     <input class="admin-input admin-pw" id="adminPw" type="password" placeholder="admin password">
   </div>
   <div class="admin-section">
-    <h3>Market Phase</h3>
+    <h3>Market Controls</h3>
     <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <button class="btn btn-admin" onclick="setPhase('ipo')">SET IPO</button>
-      <button class="btn btn-admin" onclick="setPhase('trading')">SET TRADING</button>
-      <button class="btn btn-sell" onclick="resetMarket()">RESET MARKET</button>
+      <button class="btn btn-sell" onclick="resetMarket()">⚠ RESET MARKET</button>
     </div>
   </div>
   <div class="admin-section">
@@ -1058,6 +1386,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 // ═══════════════════════════════════════════════════════════════
 let userId = localStorage.getItem('arm_uid') || '';
 let userName = localStorage.getItem('arm_name') || '';
+let myUsername = userName;
 let armBucks = 0;
 let marketData = {};
 let allStocks = {};
@@ -1094,9 +1423,10 @@ async function doLogin() {
     const r = await fetch('/api/register', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:name})});
     const d = await r.json();
     if (d.error) { toast(d.error, 'err'); return; }
-    userId   = d.user_id;
-    userName = d.username;
-    armBucks = d.arm_bucks;
+    userId     = d.user_id;
+    userName   = d.username;
+    myUsername = d.username;
+    armBucks   = d.arm_bucks;
     localStorage.setItem('arm_uid',  userId);
     localStorage.setItem('arm_name', userName);
     document.getElementById('loginModal').classList.remove('open');
@@ -1138,8 +1468,8 @@ async function fetchMarket() {
     renderFuturesMarket();
     renderNewsFromMarket(d.recent_events);
     const pb = document.getElementById('phaseBadge');
-    pb.textContent = d.phase === 'ipo' ? '◦ IPO PHASE' : '● TRADING';
-    pb.className   = 'phase-badge ' + (d.phase === 'ipo' ? 'phase-ipo' : 'phase-trading');
+    pb.textContent = '● LIVE';
+    pb.className   = 'phase-badge phase-trading';
   } catch(e) {}
 }
 
@@ -1692,9 +2022,13 @@ async function spinWheel() {
   // Rotating clockwise by A° brings the segment originally at A° (from top, CW) under the pointer.
   // Account for cumulative wheelRotation so every spin is accurate.
   function calcDelta(target) {
+    // To bring 'target' degrees under the top pointer we need to rotate CW by (360-target).
+    // CSS rotate(X) moves content CW, so a segment at angle A ends up at angle A+X.
+    // For A+X = 360 (i.e. back at top/0): X = 360 - A.
+    const visualTarget = (360 - (target % 360)) % 360;
     const cur = ((wheelRotation % 360) + 360) % 360;
-    let d = ((target % 360) - cur + 360) % 360;
-    if (d < 20) d += 360; // always make a visible movement at the end
+    let d = (visualTarget - cur + 360) % 360;
+    if (d < 20) d += 360;
     return 360 * 5 + d;
   }
   const landAngle = d.land_angle;
@@ -2150,7 +2484,7 @@ function showView(name, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  if (btn) btn.classList.add('active');
+  if (btn && btn.closest('nav')) btn.classList.add('active');
   if (name === 'portfolio')  fetchPortfolio();
   if (name === 'futures')    { fetchContracts(); renderFuturesMarket(); }
   if (name === 'predictions'){ fetchPredictions(); }
@@ -2161,7 +2495,35 @@ function showView(name, btn) {
   if (name === 'admin')      { loadRecentEvents(); }
   if (name === 'resale')     { fetchResaleMarket(); }
   if (name === 'radio')      { fetchRadio(); }
+  if (name === 'battle')     { showBattleLobby(); }
+  closeMoreDrawer();
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  BOTTOM NAV (mobile)
+// ═══════════════════════════════════════════════════════════════
+const BNAV_MAIN = ['market','portfolio','shop','news'];
+function setBottomNav(name) {
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById(`bnav-${name}`);
+  if (el) el.classList.add('active');
+  else document.getElementById('bnav-more').classList.add('active');
+}
+function toggleMoreDrawer() {
+  const d = document.getElementById('more-drawer');
+  d.classList.toggle('open');
+}
+function closeMoreDrawer() {
+  document.getElementById('more-drawer').classList.remove('open');
+}
+// Close drawer on outside tap
+document.addEventListener('click', e => {
+  const drawer = document.getElementById('more-drawer');
+  const moreBtn = document.getElementById('bnav-more');
+  if (drawer.classList.contains('open') && !drawer.contains(e.target) && !moreBtn.contains(e.target)) {
+    drawer.classList.remove('open');
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════
 //  TOAST
@@ -2683,6 +3045,571 @@ async function setSpotifyPlaylist() {
   if (d.error) { toast(d.error, 'err'); return; }
   toast('Playlist saved!');
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  CARD BATTLE
+// ═══════════════════════════════════════════════════════════════
+let activeBattleId   = null;
+let battleGameState  = null;
+let deckSelections   = [];   // [{ticker, shiny_key}]
+let deckBattleId     = null;
+let attackMode       = false;
+let attackerCardId   = null;
+let abilityMode      = false;
+let abilityHealerId  = null;
+
+// ── Special effect display data (must match backend CARD_SPECIAL_EFFECTS) ──
+const EFFECT_META = {
+  tanya_early_exit:  { icon:'🚪', label:'Early Exit',    tip:'Goes home after turn 3' },
+  mark_jesse_chaos:  { icon:'😤', label:'Volatile',      tip:'30% chance to attack Jesse/Mark instead' },
+  lucy_aura:         { icon:'👠', label:'Lucy Aura',     tip:'Admin cards lose 5 HP while in play' },
+  jenny_tea:         { icon:'☕', label:'Morning Tea',   tip:'Heals friendly board +3 HP on play' },
+  renae_prepared:    { icon:'⚡', label:'Prepared',      tip:'No summoning sickness' },
+  anita_good_vibes:  { icon:'✨', label:'Good Vibes',    tip:'Restores 1 HP to a random friendly card each turn' },
+  bella_enthusiasm:  { icon:'🌟', label:'Enthusiasm',    tip:'Friendly cards deal +1 ATK while on board' },
+  nadia_eager:       { icon:'📚', label:'Eager',         tip:'Draws 1 extra card on play' },
+  ray_slow:          { icon:'🐢', label:'Slow Starter',  tip:'2-turn summoning sickness' },
+  tom_jones_meeting: { icon:'📋', label:'In A Meeting',  tip:'20% chance can\'t attack (in a meeting)' },
+  ark_self_damage:   { icon:'🤦', label:'Clumsy',        tip:'Takes 1 self-damage after attacking' },
+  raman_chaos:       { icon:'🎲', label:'Chaos',         tip:'Random good/bad effect at start of each turn' },
+};
+
+function getEffectForName(name) {
+  const nl = name.toLowerCase();
+  const map = {
+    'tanya king':'tanya_early_exit','mark':'mark_jesse_chaos','jesse':'mark_jesse_chaos',
+    'lucy':'lucy_aura','jenny':'jenny_tea','renae':'renae_prepared','anita':'anita_good_vibes',
+    'bella':'bella_enthusiasm','nadia':'nadia_eager','ray':'ray_slow',
+    'tom jones':'tom_jones_meeting','ark':'ark_self_damage','raman':'raman_chaos'
+  };
+  for (const [frag, eff] of Object.entries(map)) {
+    if (nl.includes(frag)) return eff;
+  }
+  return null;
+}
+
+// ── Tier colours ──
+function battleHpColor(hp, max) {
+  const pct = hp / max;
+  if (pct > 0.6) return 'var(--green)';
+  if (pct > 0.3) return 'var(--yellow)';
+  return 'var(--red)';
+}
+function seniorityColor(tier) {
+  const map = {
+    director:'var(--cyan)', assoc_director:'var(--yellow)', principal:'var(--green)',
+    general:'var(--text)', graduate:'var(--dim)', support:'var(--red)'
+  };
+  return map[tier] || 'var(--dim)';
+}
+function tierBadgeStyle(tier) {
+  const map = {
+    BRONZE:`color:#cd7f32`, SILVER:`color:#c8c8d0`, GOLD:`color:#ffd700`, PLATINUM:`color:#e8e8ff`
+  };
+  return map[tier] || 'color:var(--dim)';
+}
+
+// ── Challenge modal ──
+function openChallengeModal() {
+  if (!userId) { toast('Log in first', 'err'); return; }
+  // Build a simple prompt-based modal using existing modal infra
+  const users = window._allUsersList || [];
+  let html = `<div style="padding:4px">
+    <div style="color:var(--pink);font-size:1.6rem;margin-bottom:14px">⚔ CHALLENGE A PLAYER</div>
+    <div style="margin-bottom:10px;color:var(--dim);font-size:.88rem">Winner gets both bets. Minimum 10 cards required to play.</div>
+    <div style="margin-bottom:12px">
+      <div style="color:var(--dim);font-size:.85rem;margin-bottom:4px">OPPONENT</div>
+      <input id="challengeTargetInput" class="big-input" style="font-size:1.1rem" placeholder="Enter their username" list="usernameSuggestions">
+      <datalist id="usernameSuggestions"></datalist>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="color:var(--dim);font-size:.85rem;margin-bottom:4px">YOUR BET (₳)</div>
+      <input id="challengeBetInput" class="big-input" style="font-size:1.1rem" type="number" min="0" step="1" placeholder="0 for bragging rights only" value="5">
+    </div>
+    <button class="btn btn-buy" style="width:100%;font-size:1.2rem" onclick="sendChallenge()">⚔ SEND CHALLENGE</button>
+  </div>`;
+  document.getElementById('tradeModalBody').innerHTML = html;
+  document.getElementById('tradeModal').classList.add('open');
+  // Populate datalist
+  fetch('/api/leaderboard').then(r=>r.json()).then(rows=>{
+    window._allUsersList = rows;
+    const dl = document.getElementById('usernameSuggestions');
+    if (dl) rows.forEach(r=>{ if(r.username!==myUsername){ const o=document.createElement('option'); o.value=r.username; dl.appendChild(o); }});
+  });
+}
+
+async function sendChallenge() {
+  const target = document.getElementById('challengeTargetInput')?.value.trim();
+  const bet    = parseFloat(document.getElementById('challengeBetInput')?.value || 0);
+  if (!target) { toast('Enter opponent username', 'err'); return; }
+  const r = await fetch('/api/battle/challenge', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, target_username: target, bet: isNaN(bet)?0:bet})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  document.getElementById('tradeModal').classList.remove('open');
+  toast(`Challenge sent to ${target}! ₳${(isNaN(bet)?0:bet).toFixed(2)} locked.`);
+  fetchBattleList();
+  armBucks -= (isNaN(bet)?0:bet);
+  updateBucksDisplay();
+}
+
+async function fetchBattleList() {
+  if (!userId) return;
+  const r = await fetch(`/api/battle/list?user_id=${userId}`);
+  const d = await r.json();
+  if (d.error) return;
+  // Update notification badge
+  const badge = document.getElementById('battleNotifBadge');
+  if (badge) badge.style.display = d.notif_count > 0 ? 'inline' : 'none';
+  const el = document.getElementById('battleListEl');
+  if (!el) return;
+  if (!d.battles || d.battles.length === 0) {
+    el.innerHTML = '<div class="empty-state">No battles yet. Challenge someone!</div>';
+    return;
+  }
+  el.innerHTML = d.battles.map(b => renderBattleListItem(b)).join('');
+}
+
+function renderBattleListItem(b) {
+  let statusLabel = '', actions = '';
+  const cls = b.my_turn ? 'my-turn' : (b.status==='pending_response'?'pending':'');
+  if (b.status === 'pending_response') {
+    if (b.my_side === 'responder') {
+      statusLabel = `<span style="color:var(--yellow)">⚡ You've been challenged!</span>`;
+      actions = `<button class="btn btn-buy btn-sm" onclick="respondToBattle('${b.id}',true)">ACCEPT</button>
+                 <button class="btn btn-sell btn-sm" onclick="respondToBattle('${b.id}',false)">DECLINE</button>`;
+    } else {
+      statusLabel = `<span style="color:var(--dim)">Waiting for opponent to respond…</span>`;
+    }
+  } else if (b.status === 'pending_decks') {
+    if (!b.deck_ready) {
+      statusLabel = `<span style="color:var(--yellow)">📋 Select your deck!</span>`;
+      actions = `<button class="btn btn-yellow btn-sm" onclick="startDeckSelect('${b.id}')">SELECT DECK</button>`;
+    } else {
+      statusLabel = `<span style="color:var(--dim)">Deck submitted — waiting for opponent…</span>`;
+    }
+  } else if (b.status === 'active') {
+    if (b.my_turn) {
+      statusLabel = `<span style="color:var(--pink)">⚔ YOUR TURN!</span>`;
+    } else {
+      statusLabel = `<span style="color:var(--dim)">Waiting for opponent's move…</span>`;
+    }
+    actions = `<button class="btn btn-cyan btn-sm" onclick="openBattleGame('${b.id}')">OPEN BATTLE</button>`;
+  } else if (b.status === 'finished') {
+    statusLabel = b.i_won
+      ? `<span style="color:var(--green)">🏆 YOU WON! +₳${(b.bet*2).toFixed(2)}</span>`
+      : `<span style="color:var(--red)">💀 You lost</span>`;
+  } else if (b.status === 'declined') {
+    statusLabel = `<span style="color:var(--dim)">Declined</span>`;
+  }
+  return `<div class="battle-item ${cls}">
+    <div class="battle-item-info">
+      <div class="battle-item-opp">vs <b>${b.opponent}</b></div>
+      <div class="battle-item-meta">Bet: ₳${b.bet.toFixed(2)} · Turn #${b.turn_number} · ${b.status}</div>
+      <div style="margin-top:2px">${statusLabel}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${actions}</div>
+  </div>`;
+}
+
+async function respondToBattle(battleId, accept) {
+  const r = await fetch('/api/battle/respond', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: battleId, accept})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  if (!accept) { toast('Challenge declined.'); fetchBattleList(); return; }
+  toast('Challenge accepted! Select your deck.');
+  armBucks -= (d.bet || 0);
+  updateBucksDisplay();
+  fetchBattleList();
+  startDeckSelect(battleId);
+}
+
+// ── Deck Selection ──
+async function startDeckSelect(battleId) {
+  deckBattleId = battleId;
+  deckSelections = [];
+  document.getElementById('battleLobby').style.display = 'none';
+  document.getElementById('battleGameView').style.display = 'none';
+  document.getElementById('battleDeckSelect').style.display = '';
+  // Get battle details for bet display
+  const br = await fetch(`/api/battle/state?battle_id=${battleId}&user_id=${userId}`);
+  const bd = await br.json();
+  document.getElementById('deckBattleBetDisplay').textContent = bd.bet ? `(Bet: ₳${bd.bet.toFixed(2)})` : '';
+  // Get portfolio
+  const pr = await fetch(`/api/portfolio?user_id=${userId}`);
+  const pd = await pr.json();
+  renderDeckSelectGrid(pd);
+}
+
+function renderDeckSelectGrid(pd) {
+  const grid = document.getElementById('deckSelectGrid');
+  if (!grid) return;
+  let cards = [];
+  // Normal stocks
+  (pd.holdings || []).forEach(h => {
+    for (let i = 0; i < h.shares; i++) {
+      cards.push({
+        ticker: h.ticker, shiny_key: null, name: h.name,
+        image: h.image, tier: 'NORMAL', multiplier: 1.0,
+        atk: h.price, hp: null, key: `${h.ticker}_normal_${i}`,
+        is_director: h.name && isDirectorName(h.name),
+      });
+    }
+  });
+  // Shiny cards
+  (pd.shiny_holdings || []).forEach(h => {
+    for (let i = 0; i < h.qty; i++) {
+      cards.push({
+        ticker: h.base_ticker, shiny_key: h.shiny_key, name: h.name,
+        image: h.image, tier: h.tier, multiplier: h.multiplier,
+        atk: parseFloat((h.price||0).toFixed(2)),
+        hp: null, key: `${h.shiny_key}_${i}`,
+        is_director: h.name && isDirectorName(h.name),
+      });
+    }
+  });
+  if (cards.length === 0) {
+    grid.innerHTML = '<div class="empty-state">No cards in your portfolio!</div>';
+    return;
+  }
+  grid.innerHTML = cards.map((c,i) => {
+    const eff    = getEffectForName(c.name || '');
+    const effM   = eff ? EFFECT_META[eff] : null;
+    const effTag = effM ? `<div style="font-size:.68rem;color:var(--yellow)">${effM.icon} ${effM.label}</div>` : '';
+    const dirTag = c.is_director ? `<div style="font-size:.68rem;color:var(--cyan)">◈ DIRECTOR</div>` : '';
+    return `<div class="stock-card deck-sel-card" id="dsc_${i}" onclick="toggleDeckCard(${i},'${c.ticker}','${c.shiny_key||''}')" title="${effM?effM.tip:''}">
+      <img src="/headshots/${encodeURIComponent(c.image)}" onerror="this.style.display='none'" alt="${c.name}">
+      <div class="card-body">
+        <div class="card-ticker" style="font-size:.9rem">${c.ticker}</div>
+        <div class="card-name">${c.name}</div>
+        <div style="font-size:.75rem;color:var(--orange)">ATK ₳${c.atk.toFixed(2)}</div>
+        ${c.tier!=='NORMAL'?`<div style="font-size:.68rem;${tierBadgeStyle(c.tier)}">${c.tier} ${c.multiplier}×</div>`:''}
+        ${dirTag}${effTag}
+      </div>
+    </div>`;
+  }).join('');
+  window._deckCards = cards;
+}
+
+function isDirectorName(name) {
+  const directors = ['andrew hayne','andrew lilleyman','mark','jesse','howard','ian','lucy','nesbubu'];
+  const nl = name.toLowerCase();
+  return directors.some(d => nl.includes(d) || d.includes(nl));
+}
+
+function toggleDeckCard(idx, ticker, shinyKey) {
+  const cards = window._deckCards || [];
+  const card  = cards[idx];
+  if (!card) return;
+  const el = document.getElementById(`dsc_${idx}`);
+  if (!el) return;
+  const existIdx = deckSelections.findIndex(s => s._idx === idx);
+  if (existIdx >= 0) {
+    // Deselect
+    deckSelections.splice(existIdx, 1);
+    el.classList.remove('selected');
+  } else {
+    if (deckSelections.length >= 10) { toast('Already selected 10 cards', 'err'); return; }
+    // Director limit check
+    if (card.is_director) {
+      const dirCount = deckSelections.filter(s => (window._deckCards||[])[s._idx]?.is_director).length;
+      if (dirCount >= 2) { toast('Max 2 directors per deck! They\'re too powerful.', 'err'); return; }
+    }
+    deckSelections.push({ ticker, shiny_key: shinyKey || null, _idx: idx });
+    el.classList.add('selected');
+  }
+  // Update counters
+  const countEl  = document.getElementById('deckSelectCount');
+  const dirEl    = document.getElementById('deckDirectorCount');
+  const btn      = document.getElementById('deckSubmitBtn');
+  const dirCount = deckSelections.filter(s => (window._deckCards||[])[s._idx]?.is_director).length;
+  if (countEl) countEl.textContent = deckSelections.length;
+  if (dirEl)   { dirEl.textContent = dirCount; dirEl.style.color = dirCount >= 2 ? 'var(--red)' : 'var(--cyan)'; }
+  if (btn) { btn.disabled = deckSelections.length !== 10; btn.textContent = `SUBMIT DECK (${deckSelections.length}/10)`; }
+}
+
+async function submitDeck() {
+  if (deckSelections.length !== 10) { toast('Select exactly 10 cards', 'err'); return; }
+  const selections = deckSelections.map(s => ({ ticker: s.ticker, shiny_key: s.shiny_key || null }));
+  const r = await fetch('/api/battle/select-deck', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: deckBattleId, selections})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast('Deck submitted!');
+  fetchBattleList();
+  // Check if game has started
+  const br = await fetch(`/api/battle/state?battle_id=${deckBattleId}&user_id=${userId}`);
+  const bd = await br.json();
+  if (bd.status === 'active') {
+    openBattleGame(deckBattleId);
+  } else {
+    showBattleLobby();
+  }
+}
+
+// ── Game view ──
+async function openBattleGame(battleId) {
+  activeBattleId = battleId;
+  document.getElementById('battleLobby').style.display = 'none';
+  document.getElementById('battleDeckSelect').style.display = 'none';
+  document.getElementById('battleGameView').style.display = '';
+  await refreshGame();
+}
+
+async function refreshGame() {
+  if (!activeBattleId || !userId) return;
+  const r = await fetch(`/api/battle/state?battle_id=${activeBattleId}&user_id=${userId}`);
+  const d = await r.json();
+  if (d.error) { toast(d.error,'err'); return; }
+  battleGameState = d;
+  renderGameBoard(d);
+}
+
+function renderGameBoard(d) {
+  // Turn indicator
+  const turnEl = document.getElementById('battleTurnIndicator');
+  if (d.status === 'finished') {
+    turnEl.textContent = d.i_won ? '🏆 YOU WIN!' : '💀 YOU LOST';
+    turnEl.style.borderColor = d.i_won ? 'var(--green)' : 'var(--red)';
+    turnEl.style.color       = d.i_won ? 'var(--green)' : 'var(--red)';
+    document.getElementById('endTurnBtn').style.display = 'none';
+  } else if (d.my_turn) {
+    turnEl.textContent = '⚔ YOUR TURN';
+    turnEl.style.borderColor = 'var(--pink)';
+    turnEl.style.color = 'var(--pink)';
+    document.getElementById('endTurnBtn').style.display = '';
+  } else {
+    turnEl.textContent = `Waiting for ${d.opp_name}…`;
+    turnEl.style.borderColor = 'var(--dim)';
+    turnEl.style.color = 'var(--dim)';
+    document.getElementById('endTurnBtn').style.display = 'none';
+  }
+  document.getElementById('gameBetDisplay').textContent = `Pot: ₳${(d.bet*2).toFixed(2)}`;
+  document.getElementById('gameStatusDisplay').textContent = `Turn ${d.turn_number}`;
+  document.getElementById('oppNameDisplay').textContent = d.opp_name;
+  document.getElementById('myNameDisplay').textContent  = d.my_name;
+  document.getElementById('oppHandCount').textContent   = d.opp_hand_count;
+  document.getElementById('oppDeckCount').textContent   = d.opp_deck_count;
+  document.getElementById('myDeckCount').textContent    = d.my_deck_count;
+  // Boards + hand
+  renderOppBoard(d.opp_board, d.my_turn);
+  renderMyBoard(d.my_board, d.my_turn);
+  renderMyHand(d.my_hand, d.my_turn);
+  // Log
+  const logBox = document.getElementById('battleLogBox');
+  if (logBox) logBox.innerHTML = (d.log || []).slice().reverse().map(l=>`<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:2px 0">${l}</div>`).join('');
+  // Reset attack/ability modes
+  attackMode = false; attackerCardId = null;
+  abilityMode = false; abilityHealerId = null;
+  document.getElementById('abilityPanel').style.display = 'none';
+}
+
+function renderBattleCard(card, opts={}) {
+  const hpPct    = Math.max(0, card.hp / card.max_hp * 100);
+  const hpCol    = battleHpColor(card.hp, card.max_hp);
+  const tierBadge = card.tier !== 'NORMAL' ? `<div class="battle-card-tier-badge" style="${tierBadgeStyle(card.tier)}">${card.tier}</div>` : '';
+  const sickLabel = card.sick ? `<div class="battle-card-sick-label">${card.effect==='ray_slow'?'🐢 SLOW SICK':'SUMMONING SICK'}</div>` : '';
+  const meetLabel = card.in_meeting ? `<div class="battle-card-sick-label" style="background:rgba(204,0,255,.7)">📋 IN MEETING</div>` : '';
+  const abilityBtn = (card.seniority === 'support' && opts.showAbility && !card.ability_used)
+    ? `<div class="battle-card-ability" onclick="startAbilityMode('${card.id}')">💚HEAL</div>` : '';
+  // Special effect badge
+  const effKey  = card.effect || getEffectForName(card.name || '');
+  const effMeta = effKey ? EFFECT_META[effKey] : null;
+  const effBadge = effMeta
+    ? `<div title="${effMeta.tip}" style="position:absolute;bottom:28px;left:0;right:0;text-align:center;font-size:.65rem;background:rgba(0,0,0,.75);color:var(--yellow);padding:1px 0">${effMeta.icon} ${effMeta.label}</div>`
+    : '';
+  let cls = 'battle-card';
+  if (opts.selectable)  cls += ' selectable';
+  if (opts.attackable)  cls += ' attackable';
+  if (opts.targetable)  cls += ' targetable';
+  if (card.sick)        cls += ' sick';
+  const onclick = opts.onclick ? `onclick="${opts.onclick}"` : '';
+  return `<div class="${cls}" id="bc_${card.id}" ${onclick} style="border-color:${seniorityColor(card.seniority)}40">
+    ${tierBadge}${sickLabel}${meetLabel}${abilityBtn}${effBadge}
+    <img src="/headshots/${encodeURIComponent(card.image)}" onerror="this.style.display='none'" alt="${card.name}">
+    <div class="battle-card-hp-bar"><div class="battle-card-hp-fill" style="width:${hpPct}%;background:${hpCol}"></div></div>
+    <div class="battle-card-body">
+      <div class="battle-card-name" title="${card.name}">${card.name}</div>
+      <div class="battle-card-stats">
+        <span class="battle-card-atk">⚔${card.atk}</span>
+        <span class="battle-card-hp" style="color:${hpCol}">♥${card.hp}/${card.max_hp}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderOppBoard(board, isMyTurn) {
+  const el = document.getElementById('oppBoardEl');
+  if (!el) return;
+  if (!board || board.length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:.85rem;padding:10px 0">Empty board</div>';
+    return;
+  }
+  el.innerHTML = board.map(card => {
+    const targetable = isMyTurn && attackMode;
+    return renderBattleCard(card, {
+      targetable,
+      onclick: targetable ? `doAttack('${card.id}')` : ''
+    });
+  }).join('');
+}
+
+function renderMyBoard(board, isMyTurn) {
+  const el = document.getElementById('myBoardEl');
+  if (!el) return;
+  if (!board || board.length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:.85rem;padding:10px 0">Empty board — play cards from your hand</div>';
+    return;
+  }
+  el.innerHTML = board.map(card => {
+    const attackable = isMyTurn && !attackMode && !card.sick && (battleGameState?.opp_board?.length > 0);
+    return renderBattleCard(card, {
+      attackable,
+      showAbility: isMyTurn,
+      onclick: attackable ? `startAttackMode('${card.id}')` : ''
+    });
+  }).join('');
+}
+
+function renderMyHand(hand, isMyTurn) {
+  const el = document.getElementById('myHandEl');
+  if (!el) return;
+  if (!hand || hand.length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:.85rem;padding:10px 0">Empty hand</div>';
+    return;
+  }
+  const boardFull = (battleGameState?.my_board?.length || 0) >= 5;
+  el.innerHTML = hand.map(card => {
+    const playable = isMyTurn && !boardFull && !attackMode;
+    return `<div class="battle-card hand-card${playable?' selectable':''}" ${playable?`onclick="doPlayCard('${card.id}')"`:''}
+      style="border-color:${seniorityColor(card.seniority)}40">
+      <img src="/headshots/${encodeURIComponent(card.image)}" onerror="this.style.display='none'" alt="${card.name}">
+      <div class="battle-card-hp-bar"><div class="battle-card-hp-fill" style="width:100%"></div></div>
+      <div class="battle-card-body">
+        <div class="battle-card-name" title="${card.name}">${card.name}</div>
+        <div class="battle-card-stats">
+          <span class="battle-card-atk">⚔${card.atk}</span>
+          <span class="battle-card-hp">♥${card.hp}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Attack mode ──
+function startAttackMode(attackerId) {
+  if (!battleGameState?.my_turn) return;
+  if (!battleGameState?.opp_board?.length) { toast('No enemy cards to attack', 'err'); return; }
+  attackMode = true;
+  attackerCardId = attackerId;
+  toast('Select an enemy card to attack!');
+  // Re-render to show targetable state
+  renderOppBoard(battleGameState.opp_board, true);
+  renderMyBoard(battleGameState.my_board, true);
+}
+
+async function doAttack(targetId) {
+  if (!attackMode || !attackerCardId) return;
+  attackMode = false;
+  const r = await fetch('/api/battle/attack', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: activeBattleId, attacker_id: attackerCardId, target_id: targetId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); attackMode = false; await refreshGame(); return; }
+  await refreshGame();
+}
+
+// ── Ability mode (Support heal) ──
+function startAbilityMode(healerId) {
+  if (!battleGameState?.my_turn) return;
+  abilityMode    = true;
+  abilityHealerId = healerId;
+  document.getElementById('abilityPanel').style.display = '';
+  // Show friendly board as targets
+  const board  = battleGameState.my_board || [];
+  const listEl = document.getElementById('abilityTargetList');
+  if (listEl) listEl.innerHTML = board.map(c =>
+    `<div class="battle-card selectable" onclick="doHeal('${c.id}')" style="border-color:var(--green)40">
+      <img src="/headshots/${encodeURIComponent(c.image)}" onerror="this.style.display='none'">
+      <div class="battle-card-body">
+        <div class="battle-card-name">${c.name}</div>
+        <div class="battle-card-stats"><span class="battle-card-hp">♥${c.hp}/${c.max_hp}</span></div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function cancelAbility() {
+  abilityMode = false; abilityHealerId = null;
+  document.getElementById('abilityPanel').style.display = 'none';
+}
+
+async function doHeal(targetId) {
+  if (!abilityMode || !abilityHealerId) return;
+  abilityMode = false;
+  const r = await fetch('/api/battle/use-ability', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: activeBattleId, healer_id: abilityHealerId, target_id: targetId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast('Healed!');
+  await refreshGame();
+}
+
+async function doPlayCard(cardId) {
+  const r = await fetch('/api/battle/play-card', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: activeBattleId, card_id: cardId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  await refreshGame();
+}
+
+async function doEndTurn() {
+  const r = await fetch('/api/battle/end-turn', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: activeBattleId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  await refreshGame();
+}
+
+async function doForfeit() {
+  if (!confirm('Forfeit this battle? You will lose the bet.')) return;
+  const r = await fetch('/api/battle/forfeit', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: activeBattleId})});
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast('Forfeited.');
+  await refreshGame();
+}
+
+function toggleBattleLog() {
+  const box = document.getElementById('battleLogBox');
+  if (!box) return;
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function showBattleLobby() {
+  activeBattleId = null;
+  document.getElementById('battleLobby').style.display = '';
+  document.getElementById('battleDeckSelect').style.display = 'none';
+  document.getElementById('battleGameView').style.display = 'none';
+  fetchBattleList();
+}
+
+// Poll notifications every 30s
+setInterval(() => {
+  if (userId) {
+    fetch(`/api/battle/list?user_id=${userId}`).then(r=>r.json()).then(d=>{
+      if (!d.notif_count) return;
+      const badge = document.getElementById('battleNotifBadge');
+      if (badge) badge.style.display = d.notif_count > 0 ? 'inline' : 'none';
+      // Auto-refresh game if active and it's my turn
+      if (activeBattleId && d.battles) {
+        const b = d.battles.find(x=>x.id===activeBattleId);
+        if (b && b.my_turn && battleGameState && !battleGameState.my_turn) refreshGame();
+      }
+    }).catch(()=>{});
+  }
+}, 30000);
 </script>
 </body>
 </html>
