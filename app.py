@@ -595,6 +595,10 @@ def _db_init_table(conn):
     cur.close()
 
 def save(data):
+    # SAFETY: never persist a stub/unavailable market — would wipe real DB data
+    if data.get("_db_unavailable"):
+        print("  [DB] save SKIPPED — market is DB_UNAVAILABLE stub")
+        return
     payload = json.dumps(data, default=str)
     conn = _get_db_conn()
     if conn:
@@ -621,21 +625,7 @@ def save(data):
         print("  [DB] WARNING: DATABASE_URL set but connection failed — save skipped to avoid data loss")
 
 def load():
-    conn = _get_db_conn()
-    if conn:
-        try:
-            _db_init_table(conn)
-            cur = conn.cursor()
-            cur.execute("SELECT data FROM market_state WHERE id = 1;")
-            row = cur.fetchone()
-            cur.close()
-            return json.loads(row[0]) if row else None
-        except Exception as e:
-            print(f"  [DB] load error: {e}")
-            return None
-        finally:
-            conn.close()
-    elif not _DATABASE_URL:
+    if not _DATABASE_URL:
         # Local dev only — JSON file fallback
         if os.path.exists(DATA_FILE):
             try:
@@ -645,10 +635,27 @@ def load():
             except Exception:
                 return None
         return None
-    else:
-        # DATABASE_URL set but connection failed — return sentinel so we don't overwrite with fresh data
+
+    # DATABASE_URL is set — always try DB, never fall back to JSON
+    conn = _get_db_conn()
+    if not conn:
+        # Could not connect at all — return sentinel to prevent fresh-market overwrite
         print("  [DB] WARNING: DATABASE_URL set but connection failed — will not initialise fresh market")
         return "DB_UNAVAILABLE"
+
+    try:
+        _db_init_table(conn)
+        cur = conn.cursor()
+        cur.execute("SELECT data FROM market_state WHERE id = 1;")
+        row = cur.fetchone()
+        cur.close()
+        return json.loads(row[0]) if row else None
+    except Exception as e:
+        # Connected but query failed — treat as unavailable to prevent overwrite
+        print(f"  [DB] load error (query failed): {e} — returning DB_UNAVAILABLE sentinel")
+        return "DB_UNAVAILABLE"
+    finally:
+        conn.close()
 
 def init_market():
     existing = load()
