@@ -294,49 +294,11 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   font-size:.8rem; flex-shrink:0; }
 .recall-event-row .recall-btn:hover { background:rgba(255,34,85,.3); }
 
-/* FUTURES */
-.futures-info-bar { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:24px; padding:14px 20px;
-  border-radius:6px; border:1px solid var(--orange); background:rgba(255,136,0,.05); box-shadow:0 0 10px rgba(255,136,0,.2); }
-.futures-info-bar .fi { font-size:1rem; color:var(--dim); }
-.futures-info-bar .fi strong { color:var(--orange); }
 .sub-tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid var(--dim); }
 .sub-tab { padding:8px 20px; background:none; border:none; border-bottom:2px solid transparent;
   color:var(--dim); font-family:var(--font); font-size:1rem; cursor:pointer; letter-spacing:.06em; transition:all .2s; }
 .sub-tab.active { color:var(--orange); border-bottom-color:var(--orange); }
 .sub-tab:hover  { color:var(--cyan); }
-.futures-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-.futures-card { border:1px solid var(--dim); border-radius:6px; background:rgba(255,136,0,.03); transition:border-color .2s; }
-.futures-card:hover { border-color:var(--orange); }
-.futures-card-head { display:flex; align-items:center; gap:10px; padding:10px 12px;
-  background:rgba(0,0,0,.3); border-bottom:1px solid var(--dim); }
-.futures-card-head img { width:38px; height:38px; object-fit:cover; border-radius:3px; border:1px solid var(--dim); }
-.futures-card-ticker { font-size:1.1rem; color:var(--cyan); }
-.futures-card-name   { font-size:.7rem; color:var(--dim); }
-.futures-card-price  { font-size:.85rem; color:var(--text); margin-left:auto; text-align:right; }
-.futures-card-body   { padding:10px 12px; }
-.dur-selector { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
-.dur-btn { padding:4px 10px; border-radius:4px; font-family:var(--font); font-size:.8rem; cursor:pointer;
-  background:rgba(255,136,0,.1); border:1px solid rgba(255,136,0,.3); color:var(--orange); transition:all .2s; }
-.dur-btn.selected { background:rgba(255,136,0,.3); border-color:var(--orange); box-shadow:0 0 8px var(--orange); }
-.updn-row { display:flex; gap:6px; }
-.btn-up { background:rgba(0,255,136,.1); border:1px solid var(--green); color:var(--green);
-  padding:5px 12px; border-radius:4px; font-family:var(--font); font-size:.9rem; cursor:pointer; transition:all .2s; }
-.btn-up:hover { background:rgba(0,255,136,.25); box-shadow:0 0 8px var(--green); }
-.btn-dn { background:rgba(255,34,85,.1); border:1px solid var(--red); color:var(--red);
-  padding:5px 12px; border-radius:4px; font-family:var(--font); font-size:.9rem; cursor:pointer; transition:all .2s; }
-.btn-dn:hover { background:rgba(255,34,85,.25); box-shadow:0 0 8px var(--red); }
-.contracts-list { display:flex; flex-direction:column; gap:10px; }
-.contract-row { display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:6px;
-  border:1px solid var(--dim); background:rgba(255,136,0,.03); }
-.contract-dir-up { border-left:3px solid var(--green); }
-.contract-dir-dn { border-left:3px solid var(--red); }
-.contract-won    { border-left:3px solid var(--green); background:rgba(0,255,136,.05); opacity:.8; }
-.contract-lost   { border-left:3px solid var(--red);   background:rgba(255,34,85,.05);  opacity:.8; }
-.contract-info   { flex:1; }
-.contract-ticker { font-size:1.1rem; color:var(--cyan); }
-.contract-detail { font-size:.85rem; color:var(--dim); margin-top:2px; }
-.contract-status { text-align:right; font-size:1rem; }
-.countdown { font-size:1.2rem; color:var(--orange); font-variant-numeric:tabular-nums; }
 
 /* PREDICTIONS */
 .pred-card { border:1px solid rgba(204,0,255,.3); border-radius:8px; padding:18px 20px;
@@ -704,7 +666,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 .radio-track-link { color:var(--green); font-size:.85rem; flex-shrink:0; }
 .radio-empty { text-align:center; padding:60px 20px; color:var(--dim); }
 
-/* ═══════════════ CARD BATTLE ═══════════════ */
+/* ═══════════════ ARMBETS SHOWDOWN ═══════════════ */
 .battle-card {
   width:100px; flex-shrink:0; border-radius:6px; overflow:hidden; cursor:pointer;
   border:1px solid var(--dim); background:rgba(0,0,30,.7); transition:all .2s; user-select:none;
@@ -712,50 +674,69 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 }
 .battle-card.selectable:hover { border-color:var(--cyan); transform:translateY(-3px); box-shadow:0 0 12px rgba(0,245,255,.5); }
 .battle-card.selected { border-color:var(--yellow); box-shadow:0 0 12px rgba(255,230,0,.6); }
-.battle-card.attackable { border-color:var(--green); cursor:crosshair; }
-.battle-card.attackable:hover { box-shadow:0 0 14px rgba(0,255,136,.7); }
-.battle-card.targetable { border-color:var(--red); cursor:crosshair; }
-.battle-card.targetable:hover { box-shadow:0 0 14px rgba(255,34,85,.7); }
-.battle-card.sick { opacity:.65; }
-.battle-card.dead { opacity:.3; pointer-events:none; }
 .battle-card img { width:100%; aspect-ratio:1; object-fit:cover; display:block; filter:saturate(.85); }
 .battle-card-body { padding:4px 6px; font-size:.72rem; }
 .battle-card-name { color:var(--cyan); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.7rem; }
 .battle-card-stats { display:flex; justify-content:space-between; margin-top:2px; }
 .battle-card-atk { color:var(--orange); }
-.battle-card-hp  { color:var(--green); }
 .battle-card-tier-badge {
   position:absolute; top:3px; right:3px; font-size:.6rem; padding:1px 4px; border-radius:3px;
   background:rgba(0,0,0,.7); letter-spacing:.04em;
 }
-.battle-card-ability { position:absolute; top:3px; left:3px; font-size:.65rem; padding:1px 4px;
-  border-radius:3px; background:rgba(0,255,136,.25); color:var(--green); cursor:pointer; }
-.battle-card-sick-label { position:absolute; bottom:26px; left:0; right:0; text-align:center;
-  font-size:.6rem; color:var(--yellow); background:rgba(0,0,0,.6); padding:1px 0; }
-.battle-card-hp-bar { height:3px; background:rgba(0,0,0,.5); }
-.battle-card-hp-fill { height:3px; background:var(--green); transition:width .3s; }
 
-.hand-card { width:82px; }
-.hand-card:hover { border-color:var(--yellow); }
+/* Hand card (during round play — bigger) */
+.showdown-hand-card {
+  width:90px; flex-shrink:0; border-radius:8px; overflow:hidden; cursor:pointer;
+  border:1px solid var(--dim); background:rgba(0,0,40,.8); transition:all .2s; user-select:none;
+  position:relative;
+}
+.showdown-hand-card.playable:hover { border-color:var(--pink); transform:translateY(-4px); box-shadow:0 0 14px rgba(255,0,144,.5); }
+.showdown-hand-card.picked { border-color:var(--green); box-shadow:0 0 14px rgba(0,255,136,.6); opacity:.7; }
+.showdown-hand-card.spent { opacity:.3; pointer-events:none; }
+.showdown-hand-card img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+.showdown-hand-card-body { padding:5px 6px; font-size:.72rem; }
+.showdown-hand-card-name { color:var(--cyan); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.showdown-hand-card-str { color:var(--orange); font-size:.7rem; margin-top:2px; }
 
-/* Battle list items */
-.battle-item { padding:12px 16px; border-radius:6px; margin-bottom:8px; border:1px solid var(--dim);
-  background:rgba(0,245,255,.03); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.battle-item.my-turn { border-color:var(--pink); background:rgba(255,0,144,.04);
-  box-shadow:0 0 8px rgba(255,0,144,.2); }
-.battle-item.pending { border-color:var(--yellow); background:rgba(255,230,0,.03); }
-.battle-item-info { flex:1; min-width:120px; }
-.battle-item-opp { font-size:1.1rem; color:var(--cyan); }
-.battle-item-meta { font-size:.8rem; color:var(--dim); }
+/* Reveal cards (shown big after round resolves) */
+.reveal-arena { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; padding:14px; background:rgba(0,0,30,.7); border:1px solid rgba(255,255,255,.1); border-radius:10px; }
+.reveal-card { text-align:center; min-width:110px; max-width:140px; }
+.reveal-card img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:2px solid var(--dim); display:block; }
+.reveal-card.winner img { border-color:var(--green); box-shadow:0 0 20px rgba(0,255,136,.5); }
+.reveal-card.loser img { border-color:var(--red); opacity:.6; }
+.reveal-card-name { font-size:.8rem; color:var(--cyan); margin-top:4px; }
+.reveal-card-str { font-size:1rem; font-weight:bold; margin-top:2px; }
+.reveal-card-effects { font-size:.68rem; color:var(--yellow); margin-top:4px; line-height:1.6; }
+.reveal-vs { font-size:2rem; color:var(--dim); align-self:center; }
+.reveal-round-result { text-align:center; font-size:1.1rem; margin-top:10px; padding:8px; }
 
-/* Deck select cards */
-.deck-sel-card { cursor:pointer; position:relative; user-select:none; }
-.deck-sel-card.selected::after {
+/* Score bar */
+.score-pip { width:28px; height:28px; border-radius:50%; border:2px solid var(--dim); display:inline-flex; align-items:center; justify-content:center; font-size:.7rem; }
+.score-pip.won { background:var(--green); border-color:var(--green); color:#000; }
+.score-pip.lost { background:var(--red); border-color:var(--red); color:#fff; }
+
+/* CALL IT button */
+.showdown-call-btn { font-size:1.4rem; padding:14px 40px; background:linear-gradient(135deg,rgba(255,100,0,.3),rgba(255,0,144,.3)); border-color:var(--orange); color:var(--orange); animation:callpulse 1s ease-in-out infinite; }
+@keyframes callpulse { 0%,100%{box-shadow:0 0 10px rgba(255,100,0,.4)} 50%{box-shadow:0 0 24px rgba(255,100,0,.9)} }
+
+/* Hand select cards */
+.hand-sel-card { cursor:pointer; position:relative; user-select:none; }
+.hand-sel-card.selected { border-color:var(--yellow); box-shadow:0 0 10px rgba(255,230,0,.5); }
+.hand-sel-card.selected::after {
   content:'✓'; position:absolute; top:4px; left:4px;
   background:rgba(255,230,0,.9); color:#000; border-radius:50%;
   width:20px; height:20px; display:flex; align-items:center; justify-content:center;
   font-size:.85rem; line-height:20px; text-align:center;
 }
+
+/* Battle list items */
+.battle-item { padding:12px 16px; border-radius:6px; margin-bottom:8px; border:1px solid var(--dim);
+  background:rgba(0,245,255,.03); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.battle-item.my-turn { border-color:var(--pink); background:rgba(255,0,144,.04); box-shadow:0 0 8px rgba(255,0,144,.2); }
+.battle-item.pending { border-color:var(--yellow); background:rgba(255,230,0,.03); }
+.battle-item-info { flex:1; min-width:120px; }
+.battle-item-opp { font-size:1.1rem; color:var(--cyan); }
+.battle-item-meta { font-size:.8rem; color:var(--dim); }
 
 /* ═══════════════ BOTTOM NAV (mobile) ═══════════════ */
 #bottom-nav {
@@ -861,8 +842,6 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   /* Shop: single column */
   .shop-grid { grid-template-columns:1fr; gap:20px; }
 
-  /* Futures: single column */
-  .futures-grid { grid-template-columns:1fr; }
 
   /* Leaderboard: hide some columns */
   .lb-header { grid-template-columns:32px 1fr 1fr; }
@@ -909,7 +888,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
     <p>THE OFFICE STOCK EXCHANGE</p>
     <input class="big-input" id="loginInput" type="text" placeholder="ENTER YOUR NAME" maxlength="20" autocomplete="off" autofocus>
     <button class="btn-enter" onclick="doLogin()">ENTER THE MARKET →</button>
-    <p class="login-bucks">★ You'll receive ₳10 ARM Bucks to start trading ★</p>
+    <p class="login-bucks">★ You'll receive ₳30 ARM Bucks to start trading ★</p>
   </div>
 </div>
 
@@ -950,10 +929,8 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 <nav>
   <button class="active" onclick="showView('market',this)">◈ MARKET</button>
   <button onclick="showView('portfolio',this)">◉ PORTFOLIO</button>
-  <button onclick="showView('futures',this)">⚡ FUTURES</button>
   <button onclick="showView('predictions',this)">🎯 PREDICT</button>
   <button onclick="showView('shop',this)">🃏 SHOP</button>
-  <button onclick="showView('charts',this)">📈 CHARTS</button>
   <button onclick="showView('funds',this)">💼 FUNDS</button>
   <button onclick="showView('news',this)">📡 NEWS</button>
   <button onclick="showView('leaderboard',this)">★ LEADERS</button>
@@ -987,9 +964,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 <!-- MORE DRAWER (mobile) -->
 <div id="more-drawer">
   <button class="more-btn" onclick="showView('battle',this);setBottomNav('battle');closeMoreDrawer()" id="moreBattleBtn">⚔ BATTLE <span id="battleNotifBadge" style="display:none;background:var(--pink);color:#fff;border-radius:50%;padding:0 5px;font-size:.75rem;margin-left:4px">!</span></button>
-  <button class="more-btn" onclick="showView('futures',this);setBottomNav('futures');closeMoreDrawer()">⚡ FUTURES</button>
   <button class="more-btn" onclick="showView('predictions',this);setBottomNav('predictions');closeMoreDrawer()">🎯 PREDICT</button>
-  <button class="more-btn" onclick="showView('charts',this);setBottomNav('charts');closeMoreDrawer()">📈 CHARTS</button>
   <button class="more-btn" onclick="showView('funds',this);setBottomNav('funds');closeMoreDrawer()">💼 FUNDS</button>
   <button class="more-btn" onclick="showView('leaderboard',this);setBottomNav('leaderboard');closeMoreDrawer()">★ LEADERS</button>
   <button class="more-btn" onclick="showView('resale',this);setBottomNav('resale');closeMoreDrawer()">💎 RESALE</button>
@@ -1019,32 +994,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 </div>
 
 <!-- FUTURES -->
-<div class="view" id="view-futures">
-  <div class="section-title" style="color:var(--orange);text-shadow:0 0 8px var(--orange)">⚡ FUTURES</div>
-  <div class="futures-info-bar">
-    <div class="fi">Cost: <strong>₳1.00</strong></div>
-    <div class="fi">Payout if correct: <strong>₳1.80</strong></div>
-    <div class="fi">Durations: <strong>30min · 1hr · 2hr</strong></div>
-  </div>
-  <div class="sub-tabs">
-    <button class="sub-tab active" onclick="showFuturesTab('market',this)">PLACE CONTRACTS</button>
-    <button class="sub-tab" onclick="showFuturesTab('active',this)">ACTIVE <span id="activeCount"></span></button>
-    <button class="sub-tab" onclick="showFuturesTab('settled',this)">SETTLED</button>
-  </div>
-  <div id="fp-market">
-    <div style="margin-bottom:14px">
-      <span style="color:var(--dim);font-size:.9rem">Duration: </span>
-      <div class="dur-selector" style="display:inline-flex;margin-left:8px">
-        <button class="dur-btn selected" onclick="selectDuration(30,this)">30 MIN</button>
-        <button class="dur-btn" onclick="selectDuration(60,this)">1 HR</button>
-        <button class="dur-btn" onclick="selectDuration(120,this)">2 HR</button>
-      </div>
-    </div>
-    <div class="futures-grid" id="futuresMarketGrid"></div>
-  </div>
-  <div id="fp-active" style="display:none"><div class="contracts-list" id="activeContractsList"></div></div>
-  <div id="fp-settled" style="display:none"><div class="contracts-list" id="settledContractsList"></div></div>
-</div>
+<!-- Futures removed -->
 
 <!-- PREDICTIONS -->
 <div class="view" id="view-predictions">
@@ -1132,20 +1082,7 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <!-- Shiny cards trade exclusively in the 💎 RESALE tab -->
 </div>
 
-<!-- CHARTS -->
-<div class="view" id="view-charts">
-  <div class="section-title" style="color:var(--cyan)">📈 ALL STOCKS — PERFORMANCE vs IPO</div>
-  <div class="chart-controls">
-    <button class="chart-filter-btn active" id="cfAll" onclick="setChartFilter('all',this)">ALL</button>
-    <button class="chart-filter-btn" id="cfUp"  onclick="setChartFilter('up',this)">▲ GAINERS</button>
-    <button class="chart-filter-btn" id="cfDn"  onclick="setChartFilter('down',this)">▼ LOSERS</button>
-    <span style="color:var(--dim);font-size:.85rem;margin-left:8px">Click legend to toggle • % change from IPO price</span>
-  </div>
-  <div class="all-stocks-chart-wrap">
-    <canvas id="allStocksChart"></canvas>
-  </div>
-  <div class="chart-legend" id="chartLegend"></div>
-</div>
+<!-- Charts tab removed -->
 
 <!-- FUNDS -->
 <div class="view" id="view-funds">
@@ -1214,7 +1151,15 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
 
 <!-- BATTLE -->
 <div class="view" id="view-battle">
-  <div class="section-title" style="color:var(--pink);text-shadow:0 0 8px var(--pink)">⚔ SUNDAY BEST GOOD BATTLES</div>
+  <div class="section-title" style="color:var(--pink);text-shadow:0 0 8px var(--pink)">⚔ ARMBETS SHOWDOWN</div>
+
+  <!-- Pre-alpha warning -->
+  <div style="margin-bottom:18px;padding:10px 16px;border:1px solid rgba(255,230,0,.4);border-radius:6px;background:rgba(255,230,0,.05);display:flex;align-items:flex-start;gap:10px">
+    <span style="font-size:1.2rem;line-height:1.4">⚠️</span>
+    <div style="font-size:.85rem;color:var(--dim);line-height:1.6">
+      <span style="color:var(--yellow);font-weight:bold">PRE-ALPHA</span> — Battle mode is still being tested and balanced. Expect rough edges, unbalanced cards, and occasional bugs. Bets are real but play at your own risk!
+    </div>
+  </div>
 
   <!-- Lobby -->
   <div id="battleLobby">
@@ -1222,52 +1167,47 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
       <button class="btn btn-buy" onclick="openChallengeModal()">⚔ CHALLENGE PLAYER</button>
       <button class="btn btn-cyan btn-sm" onclick="fetchBattleList()">↺ REFRESH</button>
     </div>
-    <!-- Tier reference -->
-    <div style="margin-bottom:10px;font-size:.82rem;color:var(--dim);line-height:1.8">
-      <span style="color:var(--cyan)">HP TIERS:</span>
-      Director <span style="color:var(--cyan)">30HP</span> ·
-      Assoc Dir <span style="color:var(--yellow)">25HP</span> ·
-      Principal <span style="color:var(--green)">20HP</span> ·
-      General <span style="color:var(--text)">15HP</span> ·
-      Graduate <span style="color:var(--dim)">10HP</span> ·
-      Support <span style="color:var(--red)">5HP</span>
-      &nbsp;|&nbsp;
-      <span style="color:var(--orange)">ATK = stock price × shiny mult</span>
-      &nbsp;|&nbsp;
-      <span style="color:var(--purple)">Max 2 directors per deck</span>
-    </div>
-    <!-- Special effects legend -->
+
+    <!-- Showdown rules legend -->
     <details style="margin-bottom:16px;font-size:.78rem;color:var(--dim)">
-      <summary style="cursor:pointer;color:var(--yellow);font-size:.85rem;margin-bottom:6px">✨ SPECIAL CARD EFFECTS (click to expand)</summary>
-      <div style="line-height:2;padding:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 16px">
-        <div>🚪 <b style="color:var(--text)">Tanya King</b> — Goes home after turn 3</div>
-        <div>😤 <b style="color:var(--text)">Mark + Jesse</b> — 30% chance attack each other</div>
-        <div>👠 <b style="color:var(--text)">Lucy</b> — Admin cards lose 5 HP while she's in play</div>
-        <div>☕ <b style="color:var(--text)">Jenny</b> — Heals all friendly cards +3 HP on play</div>
-        <div>⚡ <b style="color:var(--text)">Renae</b> — No summoning sickness</div>
-        <div>✨ <b style="color:var(--text)">Anita</b> — Restores 1 HP to a random friendly card each turn</div>
-        <div>🌟 <b style="color:var(--text)">Bella</b> — Friendly cards deal +1 bonus damage while she's on board</div>
-        <div>📚 <b style="color:var(--text)">Nadia</b> — Draws 1 extra card when played</div>
-        <div>🐢 <b style="color:var(--text)">Ray</b> — 2-turn summoning sickness instead of 1</div>
-        <div>📋 <b style="color:var(--text)">Tom Jones</b> — 20% chance is 'in a meeting' and can't attack</div>
-        <div>🤦 <b style="color:var(--text)">Ark</b> — Takes 1 self-damage after each attack</div>
-        <div>🎲 <b style="color:var(--text)">Raman</b> — Random good or bad chaos effect each turn</div>
+      <summary style="cursor:pointer;color:var(--yellow);font-size:.85rem;margin-bottom:6px">📖 HOW TO PLAY — ARMBETS SHOWDOWN</summary>
+      <div style="line-height:1.9;padding:8px 12px;border:1px solid rgba(255,255,255,.06);border-radius:6px;background:rgba(0,0,0,.2)">
+        <div style="color:var(--cyan);margin-bottom:4px">🃏 RULES</div>
+        <div>• Each player picks <b style="color:var(--text)">5 cards</b> from their portfolio to form a hand</div>
+        <div>• <b style="color:var(--text)">Best of 5 rounds</b> — first to win 3 rounds wins the match</div>
+        <div>• Each round: secretly pick a card, then a <b style="color:var(--pink)">15-second CALL IT window</b> opens</div>
+        <div>• Press <b style="color:var(--orange)">🔥 CALL IT</b> to bluff you'll win — or wait for auto-reveal</div>
+        <div>• Card strength = <b style="color:var(--text)">stock price × rarity</b> (NORMAL×1 → PLATINUM×5)</div>
+        <div style="margin-top:8px;color:var(--yellow)">✨ SPECIAL EFFECTS</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 12px;margin-top:4px">
+          <div>🎲 <b>Raman</b> — random ×2 or ×0.25 on reveal</div>
+          <div>📋 <b>Tom Jones / Ray</b> — ₳0 this round, but ×3 your next card</div>
+          <div>🚪 <b>Tanya</b> — plays rounds 1-2 only; ₳0 in rounds 3-5</div>
+          <div>⚡ <b>Renae</b> — strength counts double</div>
+          <div>😤 <b>Mark + Jesse</b> — if both played same round → forced tie</div>
+          <div>🌊 <b>Ark</b> — 25% chance of ×0.5 on play</div>
+          <div>🌟 <b>Nadia / Bella / Rhiannon / Meg</b> — next card you play is ×2</div>
+          <div>👠 <b>Lucy</b> — opponent's Meg or Rhiannon next round is ×0.2</div>
+          <div>🍺 <b>Ryan / Liam</b> — ×2 now, but your next card has hangover ×0.7</div>
+          <div>💥 <b>Joshua after Mark</b> — ×2 combo bonus</div>
+        </div>
       </div>
     </details>
+
     <div id="battleListEl"></div>
   </div>
 
-  <!-- Deck selection -->
-  <div id="battleDeckSelect" style="display:none">
+  <!-- Hand selection -->
+  <div id="battleHandSelect" style="display:none">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
       <button class="btn btn-sell btn-sm" onclick="showBattleLobby()">← BACK</button>
-      <div style="color:var(--yellow);font-size:1.1rem">SELECT YOUR <span id="deckBattleBetDisplay"></span> DECK</div>
+      <div style="color:var(--yellow);font-size:1.1rem">🃏 PICK YOUR <b>5-CARD HAND</b></div>
     </div>
-    <div style="color:var(--dim);font-size:.88rem;margin-bottom:6px">Select exactly 10 cards. Max <b style="color:var(--purple)">2 directors</b>. Cards with special effects are highlighted.</div>
-    <div style="margin-bottom:8px;font-size:.95rem">Selected: <span id="deckSelectCount" style="color:var(--yellow)">0</span> / 10 &nbsp;|&nbsp; Directors: <span id="deckDirectorCount" style="color:var(--cyan)">0</span> / 2</div>
-    <div id="deckSelectGrid" class="market-grid"></div>
+    <div style="color:var(--dim);font-size:.88rem;margin-bottom:10px">Choose 5 cards from your portfolio. Card strength = price × rarity. Duplicates allowed if you hold multiple shares.</div>
+    <div style="margin-bottom:10px;font-size:.95rem">Selected: <span id="handSelectCount" style="color:var(--yellow)">0</span> / 5</div>
+    <div id="handSelectGrid" class="market-grid"></div>
     <div style="margin-top:18px;display:flex;gap:10px">
-      <button class="btn btn-buy" id="deckSubmitBtn" onclick="submitDeck()" disabled>SUBMIT DECK (10 cards)</button>
+      <button class="btn btn-buy" id="handSubmitBtn" onclick="submitHand()" disabled>LOCK IN HAND (0/5)</button>
     </div>
   </div>
 
@@ -1275,42 +1215,43 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   <div id="battleGameView" style="display:none">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
       <button class="btn btn-sell btn-sm" onclick="showBattleLobby()">← LOBBY</button>
-      <div id="battleTurnIndicator" style="font-size:1rem;padding:4px 14px;border-radius:4px;border:1px solid var(--cyan);color:var(--cyan)">Loading…</div>
-      <button class="btn btn-yellow btn-sm" id="endTurnBtn" onclick="doEndTurn()" style="display:none">END TURN</button>
       <button class="btn btn-sell btn-sm" onclick="doForfeit()">FORFEIT</button>
       <button class="btn btn-cyan btn-sm" onclick="refreshGame()">↺</button>
     </div>
 
-    <!-- Bet + Log toggle -->
-    <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px;flex-wrap:wrap;font-size:.88rem">
-      <span id="gameBetDisplay" style="color:var(--yellow)"></span>
-      <span id="gameStatusDisplay" style="color:var(--dim)"></span>
-      <button class="btn btn-cyan btn-xs" onclick="toggleBattleLog()">📋 LOG</button>
+    <!-- Score bar -->
+    <div id="battleScoreBar" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 14px;background:rgba(0,0,30,.6);border:1px solid rgba(255,255,255,.1);border-radius:8px"></div>
+
+    <!-- Status line -->
+    <div id="battleStatusLine" style="font-size:.9rem;color:var(--dim);margin-bottom:14px"></div>
+
+    <!-- Arena: the revealed cards -->
+    <div id="battleArena" style="display:none;margin-bottom:16px"></div>
+
+    <!-- My hand: pick a card -->
+    <div id="myHandSection">
+      <div style="font-size:.85rem;color:var(--cyan);margin-bottom:8px">🤚 YOUR HAND — tap a card to play it</div>
+      <div id="myHandEl" style="display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:rgba(0,245,255,.03);border:1px solid rgba(0,245,255,.15);border-radius:6px;min-height:80px"></div>
     </div>
-    <div id="battleLogBox" style="display:none;max-height:140px;overflow-y:auto;font-size:.78rem;color:var(--dim);background:rgba(0,0,30,.6);border:1px solid var(--dim);border-radius:4px;padding:8px 12px;margin-bottom:12px"></div>
 
-    <!-- Opponent side -->
-    <div style="margin-bottom:6px;font-size:.85rem;color:var(--red)">⚔ OPPONENT BOARD — <span id="oppNameDisplay"></span></div>
-    <div id="oppBoardEl" style="display:flex;gap:8px;flex-wrap:wrap;min-height:90px;padding:10px;background:rgba(255,34,85,.04);border:1px solid rgba(255,34,85,.2);border-radius:6px;margin-bottom:6px"></div>
-    <div style="font-size:.78rem;color:var(--dim);margin-bottom:14px">Opp hand: <span id="oppHandCount">?</span> cards · Deck: <span id="oppDeckCount">?</span></div>
+    <!-- CALL IT button -->
+    <div id="callItSection" style="display:none;text-align:center;margin:18px 0">
+      <div style="font-size:.82rem;color:var(--dim);margin-bottom:8px" id="callItDesc">Both players have picked. Reveal in <span id="callItCountdown" style="color:var(--yellow);font-weight:bold">15s</span></div>
+      <button class="btn btn-buy showdown-call-btn" onclick="callIt()" id="callItBtn">🔥 CALL IT!</button>
+      <div style="font-size:.72rem;color:var(--dim);margin-top:6px">Smash CALL IT to force an immediate reveal and claim you're winning this round!</div>
+    </div>
 
-    <!-- My side -->
-    <div style="margin-bottom:6px;font-size:.85rem;color:var(--green)">🛡 YOUR BOARD — <span id="myNameDisplay"></span></div>
-    <div id="myBoardEl" style="display:flex;gap:8px;flex-wrap:wrap;min-height:90px;padding:10px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.2);border-radius:6px;margin-bottom:6px"></div>
-    <div style="font-size:.78rem;color:var(--dim);margin-bottom:14px">Deck: <span id="myDeckCount">?</span> remaining</div>
+    <!-- Waiting for opponent -->
+    <div id="waitingSection" style="display:none;text-align:center;padding:20px;color:var(--dim);font-size:.9rem"></div>
 
-    <!-- My hand -->
-    <div style="margin-bottom:8px;font-size:.85rem;color:var(--cyan)">🤚 YOUR HAND</div>
-    <div id="myHandEl" style="display:flex;gap:8px;flex-wrap:wrap;min-height:80px;padding:10px;background:rgba(0,245,255,.03);border:1px solid rgba(0,245,255,.2);border-radius:6px"></div>
-
-    <!-- Ability panel -->
-    <div id="abilityPanel" style="display:none;margin-top:14px;padding:12px;background:rgba(0,255,136,.05);border:1px solid var(--green);border-radius:6px">
-      <div style="color:var(--green);margin-bottom:8px">💚 SUPPORT HEAL — select a friendly card to heal +5 HP</div>
-      <div id="abilityTargetList" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-      <button class="btn btn-sell btn-xs" style="margin-top:8px" onclick="cancelAbility()">CANCEL</button>
+    <!-- Log -->
+    <div style="margin-top:14px">
+      <button class="btn btn-cyan btn-xs" onclick="toggleBattleLog()" style="margin-bottom:6px">📋 ROUND LOG</button>
+      <div id="battleLogBox" style="display:none;max-height:160px;overflow-y:auto;font-size:.78rem;color:var(--dim);background:rgba(0,0,30,.6);border:1px solid var(--dim);border-radius:4px;padding:8px 12px"></div>
     </div>
   </div>
 </div>
+
 
 <!-- ADMIN -->
 <div class="view" id="view-admin">
@@ -1321,8 +1262,15 @@ nav button.active { color:var(--pink); background:rgba(255,0,144,.06); box-shado
   </div>
   <div class="admin-section">
     <h3>Market Controls</h3>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <button class="btn btn-sell" onclick="resetMarket()">⚠ RESET MARKET</button>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
+      <div>
+        <button class="btn btn-sell" onclick="resetUsersOnly()" style="background:rgba(255,136,0,.15);border-color:var(--orange);color:var(--orange)">💸 HARD RESET PLAYERS</button>
+        <div style="font-size:.75rem;color:var(--dim);margin-top:4px;max-width:220px">Resets all portfolios to empty &amp; ARM Bucks to ₳30. Stocks and prices stay.</div>
+      </div>
+      <div>
+        <button class="btn btn-sell" onclick="resetMarket()">⚠ RESET MARKET</button>
+        <div style="font-size:.75rem;color:var(--dim);margin-top:4px;max-width:200px">Wipes everything — all users, stocks, and events.</div>
+      </div>
     </div>
   </div>
   <div class="admin-section">
@@ -1390,15 +1338,12 @@ let myUsername = userName;
 let armBucks = 0;
 let marketData = {};
 let allStocks = {};
-let countdownInterval = null;
 let predPollInterval = null;
 let shinyPollInterval = null;
 let lastPredStates = {};
 let packCards = [];
 let packRevealedCount = 0;
-let selectedDuration = 30;
 let currentPredTab = 'open';
-let currentFuturesTab = 'market';
 
 // ═══════════════════════════════════════════════════════════════
 //  BOOTSTRAP
@@ -1450,8 +1395,6 @@ function startPolling() {
   setInterval(fetchPredictions, 10000);
   setInterval(fetchPortfolio, 12000);
   // shiny market interval removed — shinies traded via resale tab only
-  if (countdownInterval) clearInterval(countdownInterval);
-  countdownInterval = setInterval(tickCountdowns, 1000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1465,7 +1408,6 @@ async function fetchMarket() {
     allStocks  = d.stocks;
     renderMarketGrid();
     renderTickerTape();
-    renderFuturesMarket();
     renderNewsFromMarket(d.recent_events);
     const pb = document.getElementById('phaseBadge');
     pb.textContent = '● LIVE';
@@ -1610,7 +1552,6 @@ async function fetchPortfolio() {
     <div class="port-stat box"><div class="label">ARM BUCKS</div><div class="value neon-yellow">₳${d.arm_bucks.toFixed(2)}</div></div>
     <div class="port-stat box"><div class="label">PORTFOLIO</div><div class="value neon-cyan">₳${d.portfolio_value.toFixed(2)}</div></div>
     <div class="port-stat box"><div class="label">TOTAL WORTH</div><div class="value neon-green">₳${d.total_value.toFixed(2)}</div></div>
-    <div class="port-stat box"><div class="label">ACTIVE FUTURES</div><div class="value neon-orange">${d.active_futures}</div></div>
     <div class="port-stat box"><div class="label">OPEN BETS</div><div class="value neon-purple">${d.active_predictions}</div></div>`;
   // Normal holdings
   const list = document.getElementById('holdingsList');
@@ -1658,108 +1599,7 @@ async function fetchPortfolio() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  FUTURES
-// ═══════════════════════════════════════════════════════════════
-function showFuturesTab(tab, btn) {
-  currentFuturesTab = tab;
-  document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  ['market','active','settled'].forEach(t => {
-    const el = document.getElementById(`fp-${t}`);
-    if (el) el.style.display = t === tab ? '' : 'none';
-  });
-  if (tab === 'active' || tab === 'settled') fetchContracts();
-}
-
-function renderFuturesMarket() {
-  const grid = document.getElementById('futuresMarketGrid');
-  if (!grid) return;
-  grid.innerHTML = Object.values(allStocks).sort((a,b)=>a.name.localeCompare(b.name)).map(s => `
-    <div class="futures-card">
-      <div class="futures-card-head">
-        <img src="/headshots/${encodeURIComponent(s.image)}" alt="${s.name}">
-        <div>
-          <div class="futures-card-ticker">${s.ticker}</div>
-          <div class="futures-card-name">${s.name}</div>
-        </div>
-        <div class="futures-card-price">₳${s.current_price.toFixed(4)}</div>
-      </div>
-      <div class="futures-card-body">
-        <div class="updn-row">
-          <button class="btn-up" onclick="buyFuture('${s.ticker}','UP')">▲ UP</button>
-          <button class="btn-dn" onclick="buyFuture('${s.ticker}','DOWN')">▼ DOWN</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function selectDuration(mins, btn) {
-  selectedDuration = mins;
-  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-}
-
-async function buyFuture(ticker, direction) {
-  const r = await fetch('/api/futures/buy',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({user_id:userId,ticker,direction,duration_minutes:selectedDuration})});
-  const d = await r.json();
-  if (d.error) { toast(d.error,'err'); return; }
-  armBucks = d.arm_bucks; updateBucksDisplay();
-  toast(`${direction} contract on ${ticker} · ${selectedDuration}min`);
-  fetchContracts();
-}
-
-async function fetchContracts() {
-  const r = await fetch(`/api/futures/my-contracts?user_id=${userId}`);
-  const d = await r.json();
-  if (d.error) return;
-  const ac = document.getElementById('activeCount');
-  if (ac) ac.textContent = d.active.length ? `(${d.active.length})` : '';
-  renderContracts('active', d.active);
-  renderContracts('settled', d.settled);
-}
-
-function renderContracts(type, list) {
-  const el = document.getElementById(`${type}ContractsList`);
-  if (!el) return;
-  if (!list.length) { el.innerHTML = '<div class="empty-state">None yet</div>'; return; }
-  el.innerHTML = list.map(c => {
-    let statusHtml = '';
-    if (type === 'active') {
-      const secs = c.seconds_left||0;
-      const m = Math.floor(secs/60), s = secs%60;
-      const cur = c.current_price;
-      const winning = (c.direction==='UP'&&cur>c.entry_price)||(c.direction==='DOWN'&&cur<c.entry_price);
-      statusHtml = `<div class="countdown">${m}:${String(s).padStart(2,'0')}</div>
-        <div style="font-size:.8rem;color:${winning?'var(--green)':'var(--red)'}">
-          ${winning?'▲ WINNING':'▼ LOSING'} · ₳${(cur||0).toFixed(4)}</div>`;
-    } else {
-      statusHtml = c.status==='won'
-        ? `<div class="neon-green">WON ₳${c.payout}</div>`
-        : `<div class="neon-red">LOST</div>`;
-    }
-    const dirClass = c.direction==='UP'?'contract-dir-up':'contract-dir-dn';
-    const cls      = type==='settled'?(c.status==='won'?'contract-won':'contract-lost'):dirClass;
-    return `<div class="contract-row ${cls}">
-      <div class="contract-info">
-        <div class="contract-ticker">${c.direction==='UP'?'▲':'▼'} ${c.ticker} — ${c.name}</div>
-        <div class="contract-detail">Entry ₳${c.entry_price} · ${c.duration_min}min</div>
-      </div>
-      <div class="contract-status">${statusHtml}</div>
-    </div>`;
-  }).join('');
-}
-
-function tickCountdowns() {
-  document.querySelectorAll('.countdown').forEach(el => {
-    const parts = el.textContent.split(':');
-    let total = parseInt(parts[0])*60 + parseInt(parts[1]);
-    total = Math.max(0, total - 1);
-    const m = Math.floor(total/60), s = total%60;
-    el.textContent = `${m}:${String(s).padStart(2,'0')}`;
-  });
-}
+// Futures removed
 
 // ═══════════════════════════════════════════════════════════════
 //  PREDICTIONS — parimutuel odds
@@ -2339,6 +2179,16 @@ async function setPhase(phase) {
   fetchMarket();
 }
 
+async function resetUsersOnly() {
+  if (!confirm('Reset ALL players to ₳30 with empty portfolios? Stocks and prices are kept. This cannot be undone.')) return;
+  const pw = document.getElementById('adminPw').value;
+  const r  = await fetch('/api/admin/reset-users',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:pw})});
+  const d = await r.json();
+  d.error ? toast(d.error,'err') : toast(`Hard reset done — ${d.users_reset} players reset to ₳30`);
+  fetchMarket();
+}
+
 async function resetMarket() {
   if (!confirm('Really reset the market? All data will be lost!')) return;
   const pw = document.getElementById('adminPw').value;
@@ -2486,11 +2336,9 @@ function showView(name, btn) {
   document.getElementById(`view-${name}`).classList.add('active');
   if (btn && btn.closest('nav')) btn.classList.add('active');
   if (name === 'portfolio')  fetchPortfolio();
-  if (name === 'futures')    { fetchContracts(); renderFuturesMarket(); }
   if (name === 'predictions'){ fetchPredictions(); }
   if (name === 'leaderboard') fetchLeaderboard();
   if (name === 'shop')       { /* no pre-fetch needed */ }
-  if (name === 'charts')     { fetchAndRenderChart(); }
   if (name === 'funds')      { fetchFunds(); }
   if (name === 'admin')      { loadRecentEvents(); }
   if (name === 'resale')     { fetchResaleMarket(); }
@@ -2642,106 +2490,7 @@ window.revealCard = function(i) {
   }
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  ALL-STOCKS CHART
-// ═══════════════════════════════════════════════════════════════
-let allStocksChart = null;
-let chartFilter    = 'all';
-let chartDataCache = null;
-
-async function fetchAndRenderChart() {
-  try {
-    const r = await fetch('/api/charts');
-    chartDataCache = await r.json();
-    renderAllStocksChart();
-  } catch(e) {}
-}
-
-function setChartFilter(f, btn) {
-  chartFilter = f;
-  document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (chartDataCache) renderAllStocksChart();
-}
-
-function renderAllStocksChart() {
-  const data = chartDataCache;
-  if (!data) return;
-
-  const entries = Object.entries(data).filter(([t, d]) => {
-    const last = d.points[d.points.length - 1] ?? 0;
-    if (chartFilter === 'up')   return last >= 0;
-    if (chartFilter === 'down') return last < 0;
-    return true;
-  });
-
-  const maxLen = Math.max(...entries.map(([,d]) => d.points.length));
-  const labels = Array.from({length: maxLen}, (_, i) => `T-${maxLen-i}`);
-  labels[labels.length-1] = 'NOW';
-
-  const datasets = entries.map(([ticker, d]) => ({
-    label:           ticker,
-    data:            d.points,
-    borderColor:     d.color,
-    backgroundColor: 'transparent',
-    borderWidth:     1.5,
-    pointRadius:     0,
-    tension:         0.3,
-  }));
-
-  const canvas = document.getElementById('allStocksChart');
-  if (!canvas) return;
-
-  if (allStocksChart) allStocksChart.destroy();
-  allStocksChart = new Chart(canvas.getContext('2d'), {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(0,0,20,.9)',
-          borderColor: '#00f5ff', borderWidth: 1,
-          titleColor: '#00f5ff', bodyColor: '#d0d0ff',
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y > 0 ? '+' : ''}${ctx.parsed.y.toFixed(2)}%`
-          }
-        }
-      },
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color:'#4040aa', font:{family:'VT323',size:13},
-                   callback: v => (v>0?'+':'')+v.toFixed(1)+'%' },
-          grid: { color:'rgba(64,64,170,.15)' },
-          border: { color:'rgba(64,64,170,.3)' },
-        }
-      }
-    }
-  });
-
-  // Render legend
-  const legend = document.getElementById('chartLegend');
-  if (legend) {
-    legend.innerHTML = entries.map(([ticker, d], i) => {
-      const last = d.points[d.points.length-1] ?? 0;
-      return `<div class="legend-item" onclick="toggleChartLine(${i})" id="leg_${ticker}">
-        <div class="legend-dot" style="background:${d.color}"></div>
-        <span style="color:${d.color}">${ticker}</span>
-        <span style="color:var(--dim);font-size:.75rem">${last>0?'+':''}${last.toFixed(1)}%</span>
-      </div>`;
-    }).join('');
-  }
-}
-
-function toggleChartLine(index) {
-  if (!allStocksChart) return;
-  const meta = allStocksChart.getDatasetMeta(index);
-  meta.hidden = !meta.hidden;
-  allStocksChart.update();
-}
+// All-stocks chart removed
 
 // ═══════════════════════════════════════════════════════════════
 //  ETF FUNDS
@@ -3047,66 +2796,19 @@ async function setSpotifyPlaylist() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  CARD BATTLE
+//  ARMBETS SHOWDOWN — BATTLE SYSTEM
 // ═══════════════════════════════════════════════════════════════
 let activeBattleId   = null;
 let battleGameState  = null;
-let deckSelections   = [];   // [{ticker, shiny_key}]
-let deckBattleId     = null;
-let attackMode       = false;
-let attackerCardId   = null;
-let abilityMode      = false;
-let abilityHealerId  = null;
+let handSelections   = [];   // [{ticker, shiny_key, _idx}]
+let handBattleId     = null;
+let _callItTimer     = null;
 
-// ── Special effect display data (must match backend CARD_SPECIAL_EFFECTS) ──
-const EFFECT_META = {
-  tanya_early_exit:  { icon:'🚪', label:'Early Exit',    tip:'Goes home after turn 3' },
-  mark_jesse_chaos:  { icon:'😤', label:'Volatile',      tip:'30% chance to attack Jesse/Mark instead' },
-  lucy_aura:         { icon:'👠', label:'Lucy Aura',     tip:'Admin cards lose 5 HP while in play' },
-  jenny_tea:         { icon:'☕', label:'Morning Tea',   tip:'Heals friendly board +3 HP on play' },
-  renae_prepared:    { icon:'⚡', label:'Prepared',      tip:'No summoning sickness' },
-  anita_good_vibes:  { icon:'✨', label:'Good Vibes',    tip:'Restores 1 HP to a random friendly card each turn' },
-  bella_enthusiasm:  { icon:'🌟', label:'Enthusiasm',    tip:'Friendly cards deal +1 ATK while on board' },
-  nadia_eager:       { icon:'📚', label:'Eager',         tip:'Draws 1 extra card on play' },
-  ray_slow:          { icon:'🐢', label:'Slow Starter',  tip:'2-turn summoning sickness' },
-  tom_jones_meeting: { icon:'📋', label:'In A Meeting',  tip:'20% chance can\'t attack (in a meeting)' },
-  ark_self_damage:   { icon:'🤦', label:'Clumsy',        tip:'Takes 1 self-damage after attacking' },
-  raman_chaos:       { icon:'🎲', label:'Chaos',         tip:'Random good/bad effect at start of each turn' },
-};
+const RARITY_MULT_UI = {NORMAL:1,BRONZE:2,SILVER:3,GOLD:4,PLATINUM:5};
+const TIER_STYLE     = {BRONZE:'color:#cd7f32',SILVER:'color:#c8c8d0',GOLD:'color:#ffd700',PLATINUM:'color:#e8e8ff'};
 
-function getEffectForName(name) {
-  const nl = name.toLowerCase();
-  const map = {
-    'tanya king':'tanya_early_exit','mark':'mark_jesse_chaos','jesse':'mark_jesse_chaos',
-    'lucy':'lucy_aura','jenny':'jenny_tea','renae':'renae_prepared','anita':'anita_good_vibes',
-    'bella':'bella_enthusiasm','nadia':'nadia_eager','ray':'ray_slow',
-    'tom jones':'tom_jones_meeting','ark':'ark_self_damage','raman':'raman_chaos'
-  };
-  for (const [frag, eff] of Object.entries(map)) {
-    if (nl.includes(frag)) return eff;
-  }
-  return null;
-}
-
-// ── Tier colours ──
-function battleHpColor(hp, max) {
-  const pct = hp / max;
-  if (pct > 0.6) return 'var(--green)';
-  if (pct > 0.3) return 'var(--yellow)';
-  return 'var(--red)';
-}
-function seniorityColor(tier) {
-  const map = {
-    director:'var(--cyan)', assoc_director:'var(--yellow)', principal:'var(--green)',
-    general:'var(--text)', graduate:'var(--dim)', support:'var(--red)'
-  };
-  return map[tier] || 'var(--dim)';
-}
-function tierBadgeStyle(tier) {
-  const map = {
-    BRONZE:`color:#cd7f32`, SILVER:`color:#c8c8d0`, GOLD:`color:#ffd700`, PLATINUM:`color:#e8e8ff`
-  };
-  return map[tier] || 'color:var(--dim)';
+function cardStrength(price, tier) {
+  return parseFloat((price * (RARITY_MULT_UI[tier] || 1)).toFixed(2));
 }
 
 // ── Challenge modal ──
@@ -3114,7 +2816,7 @@ function openChallengeModal(preselect) {
   if (!userId) { toast('Log in first', 'err'); return; }
   const html = `<div style="padding:4px">
     <div style="color:var(--pink);font-size:1.6rem;margin-bottom:6px">⚔ CHALLENGE A PLAYER</div>
-    <div style="margin-bottom:12px;color:var(--dim);font-size:.85rem">Winner takes both bets. Need ≥10 cards to play.</div>
+    <div style="margin-bottom:12px;color:var(--dim);font-size:.85rem">Winner takes both bets. Need ≥5 cards to play.</div>
     <div id="challengePlayerList" style="margin-bottom:14px;max-height:260px;overflow-y:auto">
       <div style="color:var(--dim);font-size:.85rem">Loading players…</div>
     </div>
@@ -3132,7 +2834,6 @@ function openChallengeModal(preselect) {
   document.getElementById('stockModalContent').innerHTML = html;
   document.getElementById('stockModal').classList.add('open');
   if (preselect) document.getElementById('challengeTargetInput').value = preselect;
-  // Fetch players and build clickable list
   fetch('/api/leaderboard').then(r=>r.json()).then(rows=>{
     window._allUsersList = rows;
     const dl = document.getElementById('usernameSuggestions');
@@ -3145,10 +2846,10 @@ function openChallengeModal(preselect) {
     if (dl) others.forEach(r=>{ const o=document.createElement('option'); o.value=r.username; dl.appendChild(o); });
     if (listEl) {
       listEl.innerHTML = others.map(r => {
-        const ready = r.total_cards >= 10;
+        const ready = r.total_cards >= 5;
         const cardLabel = ready
           ? `<span style="color:var(--green)">✓ ${r.total_cards} cards</span>`
-          : `<span style="color:var(--red)">✗ ${r.total_cards} cards (needs 10)</span>`;
+          : `<span style="color:var(--red)">✗ ${r.total_cards} cards (needs 5)</span>`;
         const rowStyle = ready
           ? 'cursor:pointer;padding:10px 12px;border-radius:6px;margin-bottom:6px;border:1px solid var(--dim);display:flex;justify-content:space-between;align-items:center;background:rgba(0,245,255,.03)'
           : 'padding:10px 12px;border-radius:6px;margin-bottom:6px;border:1px solid rgba(255,34,85,.2);display:flex;justify-content:space-between;align-items:center;opacity:.5';
@@ -3182,12 +2883,12 @@ async function sendChallenge() {
   updateBucksDisplay();
 }
 
+// ── Battle list ──
 async function fetchBattleList() {
   if (!userId) return;
   const r = await fetch(`/api/battle/list?user_id=${userId}`);
   const d = await r.json();
   if (d.error) return;
-  // Update notification badge
   const badge = document.getElementById('battleNotifBadge');
   if (badge) badge.style.display = d.notif_count > 0 ? 'inline' : 'none';
   const el = document.getElementById('battleListEl');
@@ -3201,40 +2902,45 @@ async function fetchBattleList() {
 
 function renderBattleListItem(b) {
   let statusLabel = '', actions = '';
-  const cls = b.my_turn ? 'my-turn' : (b.status==='pending_response'?'pending':'');
+  const myScore  = b.scores?.[b.my_side] || 0;
+  const oppSide  = b.my_side === 'challenger' ? 'responder' : 'challenger';
+  const oppScore = b.scores?.[oppSide] || 0;
+  const scoreStr = `<span style="color:var(--green)">${myScore}</span><span style="color:var(--dim)"> – </span><span style="color:var(--red)">${oppScore}</span>`;
+  const needsAction = (b.status === 'in_progress' && !b.my_pick) || b.status === 'pending_response' || b.status === 'selecting_hands';
+  const cls = needsAction ? (b.status==='pending_response'?'pending':'my-turn') : '';
+
   if (b.status === 'pending_response') {
     if (b.my_side === 'responder') {
       statusLabel = `<span style="color:var(--yellow)">⚡ You've been challenged!</span>`;
       actions = `<button class="btn btn-buy btn-sm" onclick="respondToBattle('${b.id}',true)">ACCEPT</button>
                  <button class="btn btn-sell btn-sm" onclick="respondToBattle('${b.id}',false)">DECLINE</button>`;
     } else {
-      statusLabel = `<span style="color:var(--dim)">Waiting for opponent to respond…</span>`;
+      statusLabel = `<span style="color:var(--dim)">Waiting for response…</span>`;
     }
-  } else if (b.status === 'pending_decks') {
-    if (!b.deck_ready) {
-      statusLabel = `<span style="color:var(--yellow)">📋 Select your deck!</span>`;
-      actions = `<button class="btn btn-yellow btn-sm" onclick="startDeckSelect('${b.id}')">SELECT DECK</button>`;
+  } else if (b.status === 'selecting_hands') {
+    statusLabel = `<span style="color:var(--yellow)">🃏 Pick your 5-card hand!</span>`;
+    actions = `<button class="btn btn-yellow btn-sm" onclick="startHandSelect('${b.id}')">PICK HAND</button>`;
+  } else if (b.status === 'in_progress') {
+    const round = b.round || 1;
+    if (!b.my_pick) {
+      statusLabel = `<span style="color:var(--pink)">⚔ Round ${round} — Play a card!</span>`;
+    } else if (b.reveal_at) {
+      statusLabel = `<span style="color:var(--orange)">🔥 Reveal time!</span>`;
     } else {
-      statusLabel = `<span style="color:var(--dim)">Deck submitted — waiting for opponent…</span>`;
+      statusLabel = `<span style="color:var(--dim)">Round ${round} — Waiting for opponent…</span>`;
     }
-  } else if (b.status === 'active') {
-    if (b.my_turn) {
-      statusLabel = `<span style="color:var(--pink)">⚔ YOUR TURN!</span>`;
-    } else {
-      statusLabel = `<span style="color:var(--dim)">Waiting for opponent's move…</span>`;
-    }
-    actions = `<button class="btn btn-cyan btn-sm" onclick="openBattleGame('${b.id}')">OPEN BATTLE</button>`;
+    actions = `<button class="btn btn-cyan btn-sm" onclick="openBattleGame('${b.id}')">OPEN BATTLE ${scoreStr}</button>`;
   } else if (b.status === 'finished') {
     statusLabel = b.i_won
       ? `<span style="color:var(--green)">🏆 YOU WON! +₳${(b.bet*2).toFixed(2)}</span>`
-      : `<span style="color:var(--red)">💀 You lost</span>`;
+      : `<span style="color:var(--red)">💀 You lost ₳${b.bet.toFixed(2)}</span>`;
   } else if (b.status === 'declined') {
     statusLabel = `<span style="color:var(--dim)">Declined</span>`;
   }
   return `<div class="battle-item ${cls}">
     <div class="battle-item-info">
       <div class="battle-item-opp">vs <b>${b.opponent}</b></div>
-      <div class="battle-item-meta">Bet: ₳${b.bet.toFixed(2)} · Turn #${b.turn_number} · ${b.status}</div>
+      <div class="battle-item-meta">Bet: ₳${b.bet.toFixed(2)} · Round ${b.round||1}/5 · ${b.status}</div>
       <div style="margin-top:2px">${statusLabel}</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${actions}</div>
@@ -3247,131 +2953,103 @@ async function respondToBattle(battleId, accept) {
   const d = await r.json();
   if (d.error) { toast(d.error, 'err'); return; }
   if (!accept) { toast('Challenge declined.'); fetchBattleList(); return; }
-  toast('Challenge accepted! Select your deck.');
+  toast('Challenge accepted! Pick your hand.');
   armBucks -= (d.bet || 0);
   updateBucksDisplay();
   fetchBattleList();
-  startDeckSelect(battleId);
+  startHandSelect(battleId);
 }
 
-// ── Deck Selection ──
-async function startDeckSelect(battleId) {
-  deckBattleId = battleId;
-  deckSelections = [];
-  document.getElementById('battleLobby').style.display = 'none';
-  document.getElementById('battleGameView').style.display = 'none';
-  document.getElementById('battleDeckSelect').style.display = '';
-  // Get battle details for bet display
-  const br = await fetch(`/api/battle/state?battle_id=${battleId}&user_id=${userId}`);
-  const bd = await br.json();
-  document.getElementById('deckBattleBetDisplay').textContent = bd.bet ? `(Bet: ₳${bd.bet.toFixed(2)})` : '';
-  // Get portfolio
+// ── Hand Selection ──
+async function startHandSelect(battleId) {
+  handBattleId   = battleId;
+  handSelections = [];
+  document.getElementById('battleLobby').style.display     = 'none';
+  document.getElementById('battleGameView').style.display  = 'none';
+  document.getElementById('battleHandSelect').style.display = '';
   const pr = await fetch(`/api/portfolio?user_id=${userId}`);
   const pd = await pr.json();
-  renderDeckSelectGrid(pd);
+  renderHandSelectGrid(pd);
 }
 
-function renderDeckSelectGrid(pd) {
-  const grid = document.getElementById('deckSelectGrid');
+function renderHandSelectGrid(pd) {
+  const grid = document.getElementById('handSelectGrid');
   if (!grid) return;
   let cards = [];
-  // Normal stocks
   (pd.holdings || []).forEach(h => {
     for (let i = 0; i < h.shares; i++) {
       cards.push({
         ticker: h.ticker, shiny_key: null, name: h.name,
-        image: h.image, tier: 'NORMAL', multiplier: 1.0,
-        atk: h.current_price, hp: null, key: `${h.ticker}_normal_${i}`,
-        is_director: h.name && isDirectorName(h.name),
+        image: h.image, tier: 'NORMAL',
+        price: h.current_price,
+        strength: cardStrength(h.current_price, 'NORMAL'),
+        key: `${h.ticker}_normal_${i}`,
       });
     }
   });
-  // Shiny cards
   (pd.shiny_holdings || []).forEach(h => {
     for (let i = 0; i < h.qty; i++) {
       cards.push({
         ticker: h.base_ticker, shiny_key: h.shiny_key, name: h.name,
-        image: h.image, tier: h.tier, multiplier: h.multiplier,
-        atk: parseFloat((h.price||0).toFixed(2)),
-        hp: null, key: `${h.shiny_key}_${i}`,
-        is_director: h.name && isDirectorName(h.name),
+        image: h.image, tier: h.tier,
+        price: parseFloat((h.price||0).toFixed(2)),
+        strength: cardStrength(h.price||0, h.tier),
+        key: `${h.shiny_key}_${i}`,
       });
     }
   });
+  cards.sort((a,b)=>b.strength-a.strength);
   if (cards.length === 0) {
     grid.innerHTML = '<div class="empty-state">No cards in your portfolio!</div>';
     return;
   }
+  window._handCards = cards;
   grid.innerHTML = cards.map((c,i) => {
-    const eff    = getEffectForName(c.name || '');
-    const effM   = eff ? EFFECT_META[eff] : null;
-    const effTag = effM ? `<div style="font-size:.68rem;color:var(--yellow)">${effM.icon} ${effM.label}</div>` : '';
-    const dirTag = c.is_director ? `<div style="font-size:.68rem;color:var(--cyan)">◈ DIRECTOR</div>` : '';
-    return `<div class="stock-card deck-sel-card" id="dsc_${i}" onclick="toggleDeckCard(${i},'${c.ticker}','${c.shiny_key||''}')" title="${effM?effM.tip:''}">
+    const tierBadge = c.tier !== 'NORMAL' ? `<div style="font-size:.65rem;${TIER_STYLE[c.tier]||''}">★ ${c.tier} ×${RARITY_MULT_UI[c.tier]||1}</div>` : '';
+    return `<div class="stock-card hand-sel-card" id="hsc_${i}" onclick="toggleHandCard(${i})">
       <img src="/headshots/${encodeURIComponent(c.image)}" onerror="this.style.display='none'" alt="${c.name}">
       <div class="card-body">
         <div class="card-ticker" style="font-size:.9rem">${c.ticker}</div>
         <div class="card-name">${c.name}</div>
-        <div style="font-size:.75rem;color:var(--orange)">ATK ₳${c.atk.toFixed(2)}</div>
-        ${c.tier!=='NORMAL'?`<div style="font-size:.68rem;${tierBadgeStyle(c.tier)}">${c.tier} ${c.multiplier}×</div>`:''}
-        ${dirTag}${effTag}
+        <div style="font-size:.75rem;color:var(--orange)">STR ₳${c.strength.toFixed(2)}</div>
+        ${tierBadge}
       </div>
     </div>`;
   }).join('');
-  window._deckCards = cards;
 }
 
-function isDirectorName(name) {
-  const directors = ['andrew hayne','andrew lilleyman','mark','jesse','howard','ian','lucy','nesbubu'];
-  const nl = name.toLowerCase();
-  return directors.some(d => nl.includes(d) || d.includes(nl));
-}
-
-function toggleDeckCard(idx, ticker, shinyKey) {
-  const cards = window._deckCards || [];
-  const card  = cards[idx];
-  if (!card) return;
-  const el = document.getElementById(`dsc_${idx}`);
+function toggleHandCard(idx) {
+  const cards = window._handCards || [];
+  const el = document.getElementById(`hsc_${idx}`);
   if (!el) return;
-  const existIdx = deckSelections.findIndex(s => s._idx === idx);
+  const existIdx = handSelections.findIndex(s => s._idx === idx);
   if (existIdx >= 0) {
-    // Deselect
-    deckSelections.splice(existIdx, 1);
+    handSelections.splice(existIdx, 1);
     el.classList.remove('selected');
   } else {
-    if (deckSelections.length >= 10) { toast('Already selected 10 cards', 'err'); return; }
-    // Director limit check
-    if (card.is_director) {
-      const dirCount = deckSelections.filter(s => (window._deckCards||[])[s._idx]?.is_director).length;
-      if (dirCount >= 2) { toast('Max 2 directors per deck! They\'re too powerful.', 'err'); return; }
-    }
-    deckSelections.push({ ticker, shiny_key: shinyKey || null, _idx: idx });
+    if (handSelections.length >= 5) { toast('Already selected 5 cards', 'err'); return; }
+    handSelections.push({ ticker: cards[idx].ticker, shiny_key: cards[idx].shiny_key || null, _idx: idx });
     el.classList.add('selected');
   }
-  // Update counters
-  const countEl  = document.getElementById('deckSelectCount');
-  const dirEl    = document.getElementById('deckDirectorCount');
-  const btn      = document.getElementById('deckSubmitBtn');
-  const dirCount = deckSelections.filter(s => (window._deckCards||[])[s._idx]?.is_director).length;
-  if (countEl) countEl.textContent = deckSelections.length;
-  if (dirEl)   { dirEl.textContent = dirCount; dirEl.style.color = dirCount >= 2 ? 'var(--red)' : 'var(--cyan)'; }
-  if (btn) { btn.disabled = deckSelections.length !== 10; btn.textContent = `SUBMIT DECK (${deckSelections.length}/10)`; }
+  const countEl = document.getElementById('handSelectCount');
+  const btn     = document.getElementById('handSubmitBtn');
+  if (countEl) countEl.textContent = handSelections.length;
+  if (btn) { btn.disabled = handSelections.length !== 5; btn.textContent = `LOCK IN HAND (${handSelections.length}/5)`; }
 }
 
-async function submitDeck() {
-  if (deckSelections.length !== 10) { toast('Select exactly 10 cards', 'err'); return; }
-  const selections = deckSelections.map(s => ({ ticker: s.ticker, shiny_key: s.shiny_key || null }));
-  const r = await fetch('/api/battle/select-deck', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({user_id: userId, battle_id: deckBattleId, selections})});
+async function submitHand() {
+  if (handSelections.length !== 5) { toast('Select exactly 5 cards', 'err'); return; }
+  const selections = handSelections.map(s => ({ ticker: s.ticker, shiny_key: s.shiny_key || null }));
+  const r = await fetch('/api/battle/select-hand', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, battle_id: handBattleId, selections})});
   const d = await r.json();
   if (d.error) { toast(d.error, 'err'); return; }
-  toast('Deck submitted!');
+  toast('Hand locked! Waiting for opponent…');
   fetchBattleList();
-  // Check if game has started
-  const br = await fetch(`/api/battle/state?battle_id=${deckBattleId}&user_id=${userId}`);
+  const br = await fetch(`/api/battle/state?battle_id=${handBattleId}&user_id=${userId}`);
   const bd = await br.json();
-  if (bd.status === 'active') {
-    openBattleGame(deckBattleId);
+  if (bd.status === 'in_progress') {
+    openBattleGame(handBattleId);
   } else {
     showBattleLobby();
   }
@@ -3380,9 +3058,9 @@ async function submitDeck() {
 // ── Game view ──
 async function openBattleGame(battleId) {
   activeBattleId = battleId;
-  document.getElementById('battleLobby').style.display = 'none';
-  document.getElementById('battleDeckSelect').style.display = 'none';
-  document.getElementById('battleGameView').style.display = '';
+  document.getElementById('battleLobby').style.display     = 'none';
+  document.getElementById('battleHandSelect').style.display = 'none';
+  document.getElementById('battleGameView').style.display  = '';
   await refreshGame();
 }
 
@@ -3392,211 +3070,208 @@ async function refreshGame() {
   const d = await r.json();
   if (d.error) { toast(d.error,'err'); return; }
   battleGameState = d;
-  renderGameBoard(d);
+  renderShowdownBoard(d);
 }
 
-function renderGameBoard(d) {
-  // Turn indicator
-  const turnEl = document.getElementById('battleTurnIndicator');
-  if (d.status === 'finished') {
-    turnEl.textContent = d.i_won ? '🏆 YOU WIN!' : '💀 YOU LOST';
-    turnEl.style.borderColor = d.i_won ? 'var(--green)' : 'var(--red)';
-    turnEl.style.color       = d.i_won ? 'var(--green)' : 'var(--red)';
-    document.getElementById('endTurnBtn').style.display = 'none';
-  } else if (d.my_turn) {
-    turnEl.textContent = '⚔ YOUR TURN';
-    turnEl.style.borderColor = 'var(--pink)';
-    turnEl.style.color = 'var(--pink)';
-    document.getElementById('endTurnBtn').style.display = '';
-  } else {
-    turnEl.textContent = `Waiting for ${d.opp_name}…`;
-    turnEl.style.borderColor = 'var(--dim)';
-    turnEl.style.color = 'var(--dim)';
-    document.getElementById('endTurnBtn').style.display = 'none';
-  }
-  document.getElementById('gameBetDisplay').textContent = `Pot: ₳${(d.bet*2).toFixed(2)}`;
-  document.getElementById('gameStatusDisplay').textContent = `Turn ${d.turn_number}`;
-  document.getElementById('oppNameDisplay').textContent = d.opp_name;
-  document.getElementById('myNameDisplay').textContent  = d.my_name;
-  document.getElementById('oppHandCount').textContent   = d.opp_hand_count;
-  document.getElementById('oppDeckCount').textContent   = d.opp_deck_count;
-  document.getElementById('myDeckCount').textContent    = d.my_deck_count;
-  // Boards + hand
-  renderOppBoard(d.opp_board, d.my_turn);
-  renderMyBoard(d.my_board, d.my_turn);
-  renderMyHand(d.my_hand, d.my_turn);
-  // Log
-  const logBox = document.getElementById('battleLogBox');
-  if (logBox) logBox.innerHTML = (d.log || []).slice().reverse().map(l=>`<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:2px 0">${l}</div>`).join('');
-  // Reset attack/ability modes
-  attackMode = false; attackerCardId = null;
-  abilityMode = false; abilityHealerId = null;
-  document.getElementById('abilityPanel').style.display = 'none';
-}
-
-function renderBattleCard(card, opts={}) {
-  const hpPct    = Math.max(0, card.hp / card.max_hp * 100);
-  const hpCol    = battleHpColor(card.hp, card.max_hp);
-  const tierBadge = card.tier !== 'NORMAL' ? `<div class="battle-card-tier-badge" style="${tierBadgeStyle(card.tier)}">${card.tier}</div>` : '';
-  const sickLabel = card.sick ? `<div class="battle-card-sick-label">${card.effect==='ray_slow'?'🐢 SLOW SICK':'SUMMONING SICK'}</div>` : '';
-  const meetLabel = card.in_meeting ? `<div class="battle-card-sick-label" style="background:rgba(204,0,255,.7)">📋 IN MEETING</div>` : '';
-  const abilityBtn = (card.seniority === 'support' && opts.showAbility && !card.ability_used)
-    ? `<div class="battle-card-ability" onclick="startAbilityMode('${card.id}')">💚HEAL</div>` : '';
-  // Special effect badge
-  const effKey  = card.effect || getEffectForName(card.name || '');
-  const effMeta = effKey ? EFFECT_META[effKey] : null;
-  const effBadge = effMeta
-    ? `<div title="${effMeta.tip}" style="position:absolute;bottom:28px;left:0;right:0;text-align:center;font-size:.65rem;background:rgba(0,0,0,.75);color:var(--yellow);padding:1px 0">${effMeta.icon} ${effMeta.label}</div>`
-    : '';
-  let cls = 'battle-card';
-  if (opts.selectable)  cls += ' selectable';
-  if (opts.attackable)  cls += ' attackable';
-  if (opts.targetable)  cls += ' targetable';
-  if (card.sick)        cls += ' sick';
-  const onclick = opts.onclick ? `onclick="${opts.onclick}"` : '';
-  return `<div class="${cls}" id="bc_${card.id}" ${onclick} style="border-color:${seniorityColor(card.seniority)}40">
-    ${tierBadge}${sickLabel}${meetLabel}${abilityBtn}${effBadge}
-    <img src="/headshots/${encodeURIComponent(card.image)}" onerror="this.style.display='none'" alt="${card.name}">
-    <div class="battle-card-hp-bar"><div class="battle-card-hp-fill" style="width:${hpPct}%;background:${hpCol}"></div></div>
-    <div class="battle-card-body">
-      <div class="battle-card-name" title="${card.name}">${card.name}</div>
-      <div class="battle-card-stats">
-        <span class="battle-card-atk">⚔${card.atk}</span>
-        <span class="battle-card-hp" style="color:${hpCol}">♥${card.hp}/${card.max_hp}</span>
+function renderShowdownBoard(d) {
+  // ── Score bar ──
+  const scoreBar = document.getElementById('battleScoreBar');
+  if (scoreBar) {
+    const myScore  = d.scores?.[d.my_side] || 0;
+    const oppSide  = d.my_side==='challenger'?'responder':'challenger';
+    const oppScore = d.scores?.[oppSide] || 0;
+    const maxR     = d.max_rounds || 5;
+    let pips = (side, score, col) => {
+      let h = '';
+      for (let i=0;i<Math.ceil(maxR/2);i++) h += `<div class="score-pip${i<score?' '+col:''}" style="margin:0 2px">${i<score?(col==='won'?'✓':'✗'):''}</div>`;
+      return h;
+    };
+    scoreBar.innerHTML = `
+      <div style="flex:1;text-align:right">
+        <div style="font-size:.8rem;color:var(--green);margin-bottom:4px">${d.my_name || 'You'}</div>
+        <div style="display:flex;justify-content:flex-end;gap:2px">${pips('my',myScore,'won')}</div>
       </div>
-    </div>
+      <div style="text-align:center;padding:0 10px">
+        <div style="font-size:1.4rem;line-height:1">⚔</div>
+        <div style="font-size:.75rem;color:var(--dim)">Round ${d.round||1}/${maxR}</div>
+      </div>
+      <div style="flex:1;text-align:left">
+        <div style="font-size:.8rem;color:var(--red);margin-bottom:4px">${d.opp_name || 'Opponent'}</div>
+        <div style="display:flex;justify-content:flex-start;gap:2px">${pips('opp',oppScore,'lost')}</div>
+      </div>`;
+  }
+
+  // ── Status line ──
+  const statusLine = document.getElementById('battleStatusLine');
+  if (statusLine) statusLine.textContent = `Pot: ₳${(d.bet*2).toFixed(2)} · ${d.status}`;
+
+  // ── Finished state ──
+  if (d.status === 'finished') {
+    document.getElementById('battleArena').style.display      = 'none';
+    document.getElementById('myHandSection').style.display    = 'none';
+    document.getElementById('callItSection').style.display    = 'none';
+    document.getElementById('waitingSection').style.display   = '';
+    const ws = document.getElementById('waitingSection');
+    if (ws) ws.innerHTML = d.i_won
+      ? `<div style="font-size:2rem">🏆</div><div style="color:var(--green);font-size:1.3rem;font-weight:bold">YOU WON!</div><div style="color:var(--dim);margin-top:4px">+₳${(d.bet*2).toFixed(2)}</div><div style="margin-top:12px"><button class="btn btn-cyan btn-sm" onclick="showBattleLobby()">← BACK TO LOBBY</button></div>`
+      : `<div style="font-size:2rem">💀</div><div style="color:var(--red);font-size:1.3rem;font-weight:bold">YOU LOST</div><div style="color:var(--dim);margin-top:4px">-₳${d.bet.toFixed(2)}</div><div style="margin-top:12px"><button class="btn btn-cyan btn-sm" onclick="showBattleLobby()">← BACK TO LOBBY</button></div>`;
+    renderBattleLog(d.log);
+    return;
+  }
+
+  // ── Show last result (after reveal) ──
+  const arena = document.getElementById('battleArena');
+  const lr = d.last_result;
+  if (lr && arena) {
+    arena.style.display = '';
+    const myCard  = d.my_side === 'challenger' ? lr.c_card : lr.r_card;
+    const oppCard = d.my_side === 'challenger' ? lr.r_card : lr.c_card;
+    const myStr   = d.my_side === 'challenger' ? lr.c_strength : lr.r_strength;
+    const oppStr  = d.my_side === 'challenger' ? lr.r_strength : lr.c_strength;
+    const myWon   = lr.winner_side === d.my_side;
+    const tie     = !lr.winner_side || lr.force_tie;
+    const myEffects  = d.my_side === 'challenger' ? lr.c_effects : lr.r_effects;
+    const oppEffects = d.my_side === 'challenger' ? lr.r_effects : lr.c_effects;
+    const roundLabel = tie ? `<div style="color:var(--yellow);font-size:1.1rem">🤝 ROUND ${lr.round} — TIE!</div>`
+      : (myWon ? `<div style="color:var(--green);font-size:1.1rem">✨ ROUND ${lr.round} — YOU WIN THIS ROUND!</div>`
+               : `<div style="color:var(--red);font-size:1.1rem">💀 ROUND ${lr.round} — OPPONENT WINS</div>`);
+    const calledStr = lr.called_by
+      ? `<div style="font-size:.78rem;color:var(--orange);margin-top:4px">🔥 ${lr.called_by === d.my_side ? 'You' : 'Opponent'} called it!</div>` : '';
+    arena.innerHTML = `<div style="margin-bottom:8px;text-align:center">${roundLabel}${calledStr}</div>
+      <div class="reveal-arena">
+        ${renderRevealCard(myCard, myStr, myWon && !tie, !myWon && !tie, myEffects, d.my_name||'You')}
+        <div class="reveal-vs">VS</div>
+        ${renderRevealCard(oppCard, oppStr, !myWon && !tie, myWon && !tie, oppEffects, d.opp_name||'Opp')}
+      </div>`;
+  } else if (arena) {
+    arena.style.display = 'none';
+  }
+
+  // ── My hand (pick a card) ──
+  const myHandSection = document.getElementById('myHandSection');
+  const myHandEl      = document.getElementById('myHandEl');
+  if (d.my_pick !== null && d.my_pick !== undefined) {
+    // Already picked — show hand but muted
+    if (myHandEl) renderHandPicked(d.my_hand, d.my_pick);
+    if (myHandSection) myHandSection.style.display = '';
+  } else {
+    // Need to pick
+    if (myHandEl) renderHandPlayable(d.my_hand || []);
+    if (myHandSection) myHandSection.style.display = '';
+  }
+
+  // ── CALL IT / Waiting sections ──
+  const callSection    = document.getElementById('callItSection');
+  const waitSection    = document.getElementById('waitingSection');
+  const bothPicked     = d.my_pick !== null && d.my_pick !== undefined && d.opp_picked;
+
+  if (bothPicked && d.reveal_at && d.status === 'in_progress') {
+    // Call window is open — show countdown + CALL IT
+    if (callSection) callSection.style.display = '';
+    if (waitSection) waitSection.style.display = 'none';
+    startCallCountdown(d.reveal_at);
+  } else if (d.my_pick !== null && d.my_pick !== undefined && !d.opp_picked) {
+    // Waiting for opponent
+    if (callSection) callSection.style.display = 'none';
+    if (waitSection) {
+      waitSection.style.display = '';
+      waitSection.innerHTML = `<div style="font-size:1.2rem">⏳</div><div style="margin-top:6px">Waiting for ${d.opp_name} to pick…</div><div style="font-size:.78rem;margin-top:4px">Page will auto-update</div>`;
+    }
+  } else {
+    if (callSection) callSection.style.display = 'none';
+    if (waitSection) waitSection.style.display = 'none';
+  }
+
+  renderBattleLog(d.log);
+}
+
+function renderRevealCard(card, strength, winner, loser, effects, playerName) {
+  if (!card) return `<div class="reveal-card"><div class="reveal-card-name">${playerName}</div><div style="color:var(--dim);font-size:.8rem">—</div></div>`;
+  const cls = winner ? 'winner' : (loser ? 'loser' : '');
+  const tierBadge = card.tier && card.tier !== 'NORMAL' ? `<div style="font-size:.65rem;${TIER_STYLE[card.tier]||''};margin-top:2px">${card.tier} ×${RARITY_MULT_UI[card.tier]||1}</div>` : '';
+  const effsHtml = effects && effects.length
+    ? `<div class="reveal-card-effects">${effects.join('<br>')}</div>` : '';
+  return `<div class="reveal-card ${cls}">
+    <img src="/headshots/${encodeURIComponent(card.image||card.ticker+'.jpg')}" onerror="this.style.display='none'" alt="${card.name}">
+    <div class="reveal-card-name">${card.name}</div>
+    ${tierBadge}
+    <div class="reveal-card-str" style="color:${winner?'var(--green)':(loser?'var(--red)':'var(--yellow)')}"">₳${(strength||0).toFixed(2)}</div>
+    ${effsHtml}
+    <div style="font-size:.72rem;color:var(--dim);margin-top:4px">${playerName}</div>
   </div>`;
 }
 
-function renderOppBoard(board, isMyTurn) {
-  const el = document.getElementById('oppBoardEl');
-  if (!el) return;
-  if (!board || board.length === 0) {
-    el.innerHTML = '<div style="color:var(--dim);font-size:.85rem;padding:10px 0">Empty board</div>';
-    return;
-  }
-  el.innerHTML = board.map(card => {
-    const targetable = isMyTurn && attackMode;
-    return renderBattleCard(card, {
-      targetable,
-      onclick: targetable ? `doAttack('${card.id}')` : ''
-    });
-  }).join('');
-}
-
-function renderMyBoard(board, isMyTurn) {
-  const el = document.getElementById('myBoardEl');
-  if (!el) return;
-  if (!board || board.length === 0) {
-    el.innerHTML = '<div style="color:var(--dim);font-size:.85rem;padding:10px 0">Empty board — play cards from your hand</div>';
-    return;
-  }
-  el.innerHTML = board.map(card => {
-    const attackable = isMyTurn && !attackMode && !card.sick && (battleGameState?.opp_board?.length > 0);
-    return renderBattleCard(card, {
-      attackable,
-      showAbility: isMyTurn,
-      onclick: attackable ? `startAttackMode('${card.id}')` : ''
-    });
-  }).join('');
-}
-
-function renderMyHand(hand, isMyTurn) {
+function renderHandPlayable(hand) {
   const el = document.getElementById('myHandEl');
   if (!el) return;
   if (!hand || hand.length === 0) {
-    el.innerHTML = '<div style="color:var(--dim);font-size:.85rem;padding:10px 0">Empty hand</div>';
+    el.innerHTML = '<div style="color:var(--dim);font-size:.85rem">No cards left in hand!</div>';
     return;
   }
-  const boardFull = (battleGameState?.my_board?.length || 0) >= 5;
-  el.innerHTML = hand.map(card => {
-    const playable = isMyTurn && !boardFull && !attackMode;
-    return `<div class="battle-card hand-card${playable?' selectable':''}" ${playable?`onclick="doPlayCard('${card.id}')"`:''}
-      style="border-color:${seniorityColor(card.seniority)}40">
-      <img src="/headshots/${encodeURIComponent(card.image)}" onerror="this.style.display='none'" alt="${card.name}">
-      <div class="battle-card-hp-bar"><div class="battle-card-hp-fill" style="width:100%"></div></div>
-      <div class="battle-card-body">
-        <div class="battle-card-name" title="${card.name}">${card.name}</div>
-        <div class="battle-card-stats">
-          <span class="battle-card-atk">⚔${card.atk}</span>
-          <span class="battle-card-hp">♥${card.hp}</span>
-        </div>
+  el.innerHTML = hand.map((c,i) => {
+    const str = cardStrength(c.current_price||0, c.tier||'NORMAL');
+    const tierBadge = c.tier && c.tier !== 'NORMAL' ? `<div style="font-size:.6rem;${TIER_STYLE[c.tier]||''}">★${c.tier}</div>` : '';
+    return `<div class="showdown-hand-card playable" onclick="doPickCard(${i})" title="Play ${c.name}">
+      <img src="/headshots/${encodeURIComponent(c.image||c.ticker+'.jpg')}" onerror="this.style.display='none'" alt="${c.name}">
+      <div class="showdown-hand-card-body">
+        <div class="showdown-hand-card-name" title="${c.name}">${c.name}</div>
+        <div class="showdown-hand-card-str">₳${str.toFixed(2)} ${tierBadge}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-// ── Attack mode ──
-function startAttackMode(attackerId) {
-  if (!battleGameState?.my_turn) return;
-  if (!battleGameState?.opp_board?.length) { toast('No enemy cards to attack', 'err'); return; }
-  attackMode = true;
-  attackerCardId = attackerId;
-  toast('Select an enemy card to attack!');
-  // Re-render to show targetable state
-  renderOppBoard(battleGameState.opp_board, true);
-  renderMyBoard(battleGameState.my_board, true);
-}
-
-async function doAttack(targetId) {
-  if (!attackMode || !attackerCardId) return;
-  attackMode = false;
-  const r = await fetch('/api/battle/attack', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({user_id: userId, battle_id: activeBattleId, attacker_id: attackerCardId, target_id: targetId})});
-  const d = await r.json();
-  if (d.error) { toast(d.error, 'err'); attackMode = false; await refreshGame(); return; }
-  await refreshGame();
-}
-
-// ── Ability mode (Support heal) ──
-function startAbilityMode(healerId) {
-  if (!battleGameState?.my_turn) return;
-  abilityMode    = true;
-  abilityHealerId = healerId;
-  document.getElementById('abilityPanel').style.display = '';
-  // Show friendly board as targets
-  const board  = battleGameState.my_board || [];
-  const listEl = document.getElementById('abilityTargetList');
-  if (listEl) listEl.innerHTML = board.map(c =>
-    `<div class="battle-card selectable" onclick="doHeal('${c.id}')" style="border-color:var(--green)40">
-      <img src="/headshots/${encodeURIComponent(c.image)}" onerror="this.style.display='none'">
-      <div class="battle-card-body">
-        <div class="battle-card-name">${c.name}</div>
-        <div class="battle-card-stats"><span class="battle-card-hp">♥${c.hp}/${c.max_hp}</span></div>
+function renderHandPicked(hand, pickedIdx) {
+  const el = document.getElementById('myHandEl');
+  if (!el) return;
+  if (!hand || hand.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = hand.map((c,i) => {
+    const str = cardStrength(c.current_price||0, c.tier||'NORMAL');
+    const isPicked = i === pickedIdx;
+    const cls = isPicked ? 'picked' : 'spent';
+    return `<div class="showdown-hand-card ${cls}">
+      <img src="/headshots/${encodeURIComponent(c.image||c.ticker+'.jpg')}" onerror="this.style.display='none'" alt="${c.name}">
+      <div class="showdown-hand-card-body">
+        <div class="showdown-hand-card-name">${c.name}</div>
+        <div class="showdown-hand-card-str">₳${str.toFixed(2)}</div>
+        ${isPicked ? '<div style="font-size:.65rem;color:var(--green)">✓ PLAYED</div>' : ''}
       </div>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
 }
 
-function cancelAbility() {
-  abilityMode = false; abilityHealerId = null;
-  document.getElementById('abilityPanel').style.display = 'none';
+function startCallCountdown(revealAt) {
+  if (_callItTimer) clearInterval(_callItTimer);
+  const deadline = new Date(revealAt + 'Z');
+  const tick = () => {
+    const secsLeft = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+    const cdEl = document.getElementById('callItCountdown');
+    if (cdEl) cdEl.textContent = secsLeft + 's';
+    if (secsLeft <= 0) {
+      clearInterval(_callItTimer);
+      _callItTimer = null;
+      refreshGame();  // auto-refresh when reveal fires
+    }
+  };
+  tick();
+  _callItTimer = setInterval(tick, 500);
 }
 
-async function doHeal(targetId) {
-  if (!abilityMode || !abilityHealerId) return;
-  abilityMode = false;
-  const r = await fetch('/api/battle/use-ability', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({user_id: userId, battle_id: activeBattleId, healer_id: abilityHealerId, target_id: targetId})});
-  const d = await r.json();
-  if (d.error) { toast(d.error, 'err'); return; }
-  toast('Healed!');
-  await refreshGame();
-}
-
-async function doPlayCard(cardId) {
+async function doPickCard(cardIdx) {
   const r = await fetch('/api/battle/play-card', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({user_id: userId, battle_id: activeBattleId, card_id: cardId})});
+    body: JSON.stringify({user_id: userId, battle_id: activeBattleId, card_index: cardIdx})});
   const d = await r.json();
   if (d.error) { toast(d.error, 'err'); return; }
+  toast('Card played! Waiting for reveal…');
   await refreshGame();
 }
 
-async function doEndTurn() {
-  const r = await fetch('/api/battle/end-turn', {method:'POST', headers:{'Content-Type':'application/json'},
+async function callIt() {
+  const r = await fetch('/api/battle/call-it', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({user_id: userId, battle_id: activeBattleId})});
   const d = await r.json();
   if (d.error) { toast(d.error, 'err'); return; }
+  toast('🔥 CALLED IT! Revealing now…');
   await refreshGame();
 }
 
@@ -3610,6 +3285,12 @@ async function doForfeit() {
   await refreshGame();
 }
 
+function renderBattleLog(log) {
+  const logBox = document.getElementById('battleLogBox');
+  if (!logBox) return;
+  logBox.innerHTML = (log || []).slice().reverse().map(l=>`<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:2px 0">${l}</div>`).join('');
+}
+
 function toggleBattleLog() {
   const box = document.getElementById('battleLogBox');
   if (!box) return;
@@ -3617,27 +3298,32 @@ function toggleBattleLog() {
 }
 
 function showBattleLobby() {
+  if (_callItTimer) { clearInterval(_callItTimer); _callItTimer = null; }
   activeBattleId = null;
-  document.getElementById('battleLobby').style.display = '';
-  document.getElementById('battleDeckSelect').style.display = 'none';
-  document.getElementById('battleGameView').style.display = 'none';
+  document.getElementById('battleLobby').style.display      = '';
+  document.getElementById('battleHandSelect').style.display  = 'none';
+  document.getElementById('battleGameView').style.display   = 'none';
   fetchBattleList();
 }
 
-// Poll notifications every 30s
+// Poll every 10s (more frequent since rounds are fast-paced)
 setInterval(() => {
-  if (userId) {
-    fetch(`/api/battle/list?user_id=${userId}`).then(r=>r.json()).then(d=>{
-      if (!d.notif_count) return;
-      const badge = document.getElementById('battleNotifBadge');
-      if (badge) badge.style.display = d.notif_count > 0 ? 'inline' : 'none';
-      // Auto-refresh game if active and it's my turn
-      if (activeBattleId && d.battles) {
-        const b = d.battles.find(x=>x.id===activeBattleId);
-        if (b && b.my_turn && battleGameState && !battleGameState.my_turn) refreshGame();
+  if (!userId) return;
+  fetch(`/api/battle/list?user_id=${userId}`).then(r=>r.json()).then(d=>{
+    if (d.error) return;
+    const badge = document.getElementById('battleNotifBadge');
+    if (badge) badge.style.display = d.notif_count > 0 ? 'inline' : 'none';
+    // Auto-refresh game if:
+    // - We're in a game AND opponent just picked (reveal_at appeared or both picked)
+    if (activeBattleId && d.battles) {
+      const b = d.battles.find(x=>x.id===activeBattleId);
+      if (b && (b.reveal_at || (!b.my_pick && b.status==='in_progress'))) {
+        refreshGame();
       }
-    }).catch(()=>{});
-  }
+    }
+  }).catch(()=>{});
+}, 10000);
+
 }, 30000);
 </script>
 </body>

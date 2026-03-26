@@ -36,10 +36,7 @@ SELL_IMPACT    = 0.025
 DRIFT_INTERVAL = 300
 DIV_INTERVAL   = 3600
 
-# ── Futures ──
-FUTURES_COST      = 1.0
-FUTURES_PAYOUT    = 1.80
-FUTURES_DURATIONS = [30, 60, 120]
+# Futures removed
 
 # ── Predictions (parimutuel pool) ──
 PREDICTION_COST = 1.0   # ₳ per bet; payout is pool-proportional at resolution
@@ -343,233 +340,6 @@ def _resolve_wheel_spin(u, free=False):
     return outcome, land_angle, reward
 
 
-def _battle_get_hp(name):
-    """Return HP for a stock name based on seniority."""
-    nl = name.lower().strip()
-    for key, hp in SENIORITY_HP.items():
-        if key in nl or nl in key:
-            return hp
-    return 15   # default General Staff
-
-def _battle_get_tier(name):
-    nl = name.lower().strip()
-    for key, tier in SENIORITY_TIER.items():
-        if key in nl or nl in key:
-            return tier
-    return "general"
-
-def _battle_get_effect(name):
-    """Return effect_key for a card name, or None."""
-    nl = name.lower().strip()
-    for fragment, effect in CARD_SPECIAL_EFFECTS.items():
-        if fragment in nl or nl in fragment:
-            return effect
-    return None
-
-def _battle_make_card(ticker, stock, shiny_key=None, shiny_info=None):
-    """Build a battle card dict from a stock and optional shiny info."""
-    multiplier = 1.0
-    tier_label = "NORMAL"
-    if shiny_info:
-        multiplier = shiny_info.get("multiplier", 1.0)
-        tier_label = shiny_info.get("tier", "NORMAL")
-    atk = round(stock["current_price"] * multiplier, 2)
-    max_hp = _battle_get_hp(stock["name"])
-    seniority = _battle_get_tier(stock["name"])
-    effect    = _battle_get_effect(stock["name"])
-    # Ray has double summoning sickness
-    sick_turns = 2 if effect == "ray_slow" else 1
-    return {
-        "id":            str(uuid.uuid4()),
-        "ticker":        ticker,
-        "name":          stock["name"],
-        "image":         stock["image"],
-        "tier":          tier_label,
-        "shiny_key":     shiny_key,
-        "multiplier":    multiplier,
-        "max_hp":        max_hp,
-        "hp":            max_hp,
-        "atk":           atk,
-        "seniority":     seniority,
-        "effect":        effect,       # special effect key or None
-        "sick":          False,        # summoning sickness — set True when played to board
-        "sick_turns":    sick_turns,   # how many end-of-turns before sick clears
-        "ability_used":  False,        # for support heal — once per turn
-        "in_meeting":    False,        # Tom Jones: set True 20% turns to block attack
-    }
-
-def _battle_notify(user, msg, battle_id, notif_type="info"):
-    _ensure_user_fields(user)
-    user["notifications"].append({
-        "id":        str(uuid.uuid4()),
-        "type":      notif_type,
-        "battle_id": battle_id,
-        "msg":       msg,
-        "ts":        now_iso(),
-        "read":      False,
-    })
-    # Keep only last 30 notifications
-    user["notifications"] = user["notifications"][-30:]
-
-def _battle_check_win(battle):
-    """Check if battle is over. Returns winning player key ('challenger'/'responder') or None."""
-    for side in ("challenger", "responder"):
-        s = battle[side]
-        if len(s["board"]) == 0 and len(s["hand"]) == 0 and len(s["deck"]) == 0:
-            other = "responder" if side == "challenger" else "challenger"
-            return other
-    return None
-
-def _battle_apply_director_aura(battle, side):
-    """If a Director card is on the board, deal 1 damage to all friendly board cards."""
-    s = battle[side]
-    has_director = any(c["seniority"] == "director" for c in s["board"])
-    if not has_director:
-        return []
-    log_msgs = []
-    dead = []
-    for card in s["board"]:
-        card["hp"] = max(0, card["hp"] - 1)
-        if card["hp"] == 0:
-            dead.append(card)
-    if dead:
-        log_msgs.append(f"Director aura: {', '.join(c['name'] for c in dead)} perished from the aura!")
-        s["board"] = [c for c in s["board"] if c["hp"] > 0]
-    elif has_director:
-        log_msgs.append(f"Director aura deals 1 damage to all {side} cards.")
-    return log_msgs
-
-def _battle_start_turn(battle):
-    """Apply start-of-turn effects: director aura, draw card, special card effects."""
-    logs = []
-    side = "challenger" if battle["current_turn"] == battle["challenger_id"] else "responder"
-    s    = battle[side]
-    turn = battle.get("turn_number", 0)
-
-    # ── Tanya King early exit (all boards) ──
-    for bside in ("challenger", "responder"):
-        bs = battle[bside]
-        gone = [c for c in bs["board"] if c.get("effect") == "tanya_early_exit" and turn >= 3]
-        if gone:
-            bs["board"] = [c for c in bs["board"] if c not in gone]
-            for g in gone:
-                logs.append(f"🚪 {g['name']} has gone home early — she's only available during turns 1-3.")
-        # Also purge from hand/deck silently (she can't even be played)
-        bs["hand"] = [c for c in bs["hand"]  if not (c.get("effect") == "tanya_early_exit" and turn >= 3)]
-        bs["deck"] = [c for c in bs["deck"]  if not (c.get("effect") == "tanya_early_exit" and turn >= 3)]
-
-    # ── Director aura ──
-    logs += _battle_apply_director_aura(battle, side)
-
-    # ── Tom Jones: 20% chance 'in a meeting' ──
-    for card in s["board"]:
-        if card.get("effect") == "tom_jones_meeting":
-            card["in_meeting"] = random.random() < 0.20
-            if card["in_meeting"]:
-                logs.append(f"📋 {card['name']} is in a meeting this turn and can't attack.")
-
-    # ── Anita good vibes: random friendly card gains +1 HP ──
-    anita_cards = [c for c in s["board"] if c.get("effect") == "anita_good_vibes"]
-    if anita_cards:
-        candidates = [c for c in s["board"] if c["hp"] < c["max_hp"]]
-        if candidates:
-            target = random.choice(candidates)
-            target["hp"] = min(target["max_hp"], target["hp"] + 1)
-            logs.append(f"✨ Anita's good vibes restore 1 HP to {target['name']} ({target['hp']}/{target['max_hp']} HP).")
-
-    # ── Raman chaos: random good OR bad effect ──
-    raman_cards = [c for c in s["board"] if c.get("effect") == "raman_chaos"]
-    for raman in raman_cards:
-        roll = random.random()
-        chaos_options = [
-            ("good", "heal_all"),
-            ("good", "atk_boost"),
-            ("good", "draw_card"),
-            ("bad",  "self_damage"),
-            ("bad",  "atk_drop"),
-            ("bad",  "hit_random_friendly"),
-        ]
-        kind, effect_type = random.choice(chaos_options)
-        if effect_type == "heal_all":
-            healed = 0
-            for c in s["board"]:
-                if c["hp"] < c["max_hp"]:
-                    c["hp"] = min(c["max_hp"], c["hp"] + 3)
-                    healed += 1
-            logs.append(f"🎲 Raman energy: GOOD — healed all friendly cards +3 HP! (healed {healed} cards)")
-        elif effect_type == "atk_boost":
-            raman["atk"] = round(raman["atk"] + 2, 2)
-            logs.append(f"🎲 Raman energy: GOOD — Raman's ATK jumps to {raman['atk']}!")
-        elif effect_type == "draw_card":
-            if s["deck"]:
-                drawn = s["deck"].pop(0)
-                s["hand"].append(drawn)
-                logs.append(f"🎲 Raman energy: GOOD — Raman draws {drawn['name']} for free!")
-            else:
-                logs.append(f"🎲 Raman energy: GOOD — Raman tries to draw but deck is empty!")
-        elif effect_type == "self_damage":
-            raman["hp"] = max(0, raman["hp"] - 3)
-            logs.append(f"🎲 Raman energy: CHAOS — Raman takes 3 self-damage! ({raman['hp']} HP left)")
-        elif effect_type == "atk_drop":
-            raman["atk"] = max(0.1, round(raman["atk"] - 1, 2))
-            logs.append(f"🎲 Raman energy: CHAOS — Raman's ATK drops to {raman['atk']}!")
-        elif effect_type == "hit_random_friendly":
-            victims = [c for c in s["board"] if c["id"] != raman["id"]]
-            if victims:
-                victim = random.choice(victims)
-                victim["hp"] = max(0, victim["hp"] - 2)
-                logs.append(f"🎲 Raman energy: CHAOS — Raman accidentally hits {victim['name']} for 2 damage! ({victim['hp']} HP left)")
-            else:
-                logs.append(f"🎲 Raman energy: CHAOS — Raman swings wildly but misses!")
-        # Remove dead cards from raman chaos
-        s["board"] = [c for c in s["board"] if c["hp"] > 0]
-
-    # ── Draw 1 card ──
-    if s["deck"]:
-        drawn = s["deck"].pop(0)
-        s["hand"].append(drawn)
-        logs.append(f"{battle[side + '_name']} draws {drawn['name']}.")
-
-    battle["log"].extend(logs)
-
-def _battle_end_turn(battle):
-    """Remove summoning sickness from board cards (respecting Ray's 2-turn sick), switch turn."""
-    side = "challenger" if battle["current_turn"] == battle["challenger_id"] else "responder"
-    s = battle[side]
-    for card in s["board"]:
-        if card.get("sick"):
-            # Decrement sick_turns counter; clear sick only when it reaches 0
-            remaining = card.get("sick_turns", 1) - 1
-            card["sick_turns"] = remaining
-            if remaining <= 0:
-                card["sick"] = False
-                if card.get("effect") == "ray_slow":
-                    battle["log"].append(f"🐢 {card['name']} is finally ready to act.")
-            else:
-                if card.get("effect") == "ray_slow":
-                    battle["log"].append(f"🐢 {card['name']} is still getting settled ({remaining} turns of summoning sickness left).")
-        card["ability_used"] = False
-        card["in_meeting"]   = False
-    battle["turn_number"] += 1
-    # Switch turn
-    if battle["current_turn"] == battle["challenger_id"]:
-        battle["current_turn"] = battle["responder_id"]
-    else:
-        battle["current_turn"] = battle["challenger_id"]
-    # Apply start-of-turn for new active player
-    _battle_start_turn(battle)
-
-
-def pred_odds(p):
-    """Return (yes_mult, no_mult) — how much ₳ back per ₳1 bet if that side wins."""
-    y, n = p["yes_bets"], p["no_bets"]
-    total = y + n
-    if total == 0:
-        return None, None
-    yes_mult = round(total / y, 2) if y > 0 else None
-    no_mult  = round(total / n, 2) if n > 0 else None
-    return yes_mult, no_mult
-
 # ─────────────────────────── DATA I/O ─────────────────────────
 def _get_db_conn():
     """Return a psycopg2 connection if DATABASE_URL is set, else None."""
@@ -798,7 +568,7 @@ def init_market():
     return data
 
 def _ensure_user_fields(u):
-    if "futures"          not in u: u["futures"]          = []
+    if "futures"          not in u: u["futures"]          = []  # kept for back-compat; no new contracts created
     if "prediction_bets"  not in u: u["prediction_bets"]  = []
     if "shiny_portfolio"  not in u: u["shiny_portfolio"]  = {}
     if "pack_history"     not in u: u["pack_history"]     = []
@@ -991,7 +761,6 @@ def get_portfolio():
                 "value":       val,
             })
 
-        active_fut  = len([f for f in u["futures"]         if f["status"] == "active"])
         active_pred = len([b for b in u["prediction_bets"] if b["status"] == "pending"])
         return jsonify({
             "username":        u["username"],
@@ -1000,7 +769,6 @@ def get_portfolio():
             "total_value":     round(u["arm_bucks"] + port_val + shiny_val, 4),
             "holdings":        holdings,
             "shiny_holdings":  shiny_holdings,
-            "active_futures":  active_fut,
             "active_predictions": active_pred,
         })
 
@@ -1068,74 +836,7 @@ def sell():
                     "arm_bucks": round(u["arm_bucks"], 4),
                     "shares_owned": u["portfolio"][ticker]})
 
-# ─────────────────────────── FUTURES ──────────────────────────
-
-@app.route("/api/futures/buy", methods=["POST"])
-def futures_buy():
-    body      = request.json or {}
-    uid       = body.get("user_id", "")
-    ticker    = body.get("ticker", "").upper()
-    direction = body.get("direction", "").upper()
-    duration  = int(body.get("duration_minutes", 30))
-    if direction not in ("UP", "DOWN"):
-        return jsonify({"error": "Direction must be UP or DOWN"}), 400
-    if duration not in FUTURES_DURATIONS:
-        return jsonify({"error": f"Duration must be one of {FUTURES_DURATIONS} minutes"}), 400
-    with lock:
-        u = market["users"].get(uid)
-        s = market["stocks"].get(ticker)
-        if not u: return jsonify({"error": "User not found"}), 404
-        if not s: return jsonify({"error": "Stock not found"}), 404
-        _ensure_user_fields(u)
-        if len([f for f in u["futures"] if f["status"] == "active"]) >= 10:
-            return jsonify({"error": "Max 10 active contracts at a time"}), 400
-        if u["arm_bucks"] < FUTURES_COST:
-            return jsonify({"error": f"Need ₳{FUTURES_COST:.2f}, you have ₳{u['arm_bucks']:.2f}"}), 400
-        expiry   = (datetime.utcnow() + timedelta(minutes=duration)).isoformat()
-        contract = {
-            "id":            str(uuid.uuid4()),
-            "ticker":        ticker,
-            "name":          s["name"],
-            "direction":     direction,
-            "entry_price":   round(s["current_price"], 4),
-            "cost":          FUTURES_COST,
-            "duration_min":  duration,
-            "expires_at":    expiry,
-            "status":        "active",
-            "settled_price": None,
-            "settled_at":    None,
-            "payout":        None,
-        }
-        u["arm_bucks"] -= FUTURES_COST
-        u["futures"].append(contract)
-        save(market)
-    return jsonify({"success": True, "contract": contract,
-                    "arm_bucks": round(u["arm_bucks"], 4)})
-
-@app.route("/api/futures/my-contracts")
-def futures_my_contracts():
-    uid = request.args.get("user_id", "")
-    with lock:
-        u = market["users"].get(uid)
-        if not u:
-            return jsonify({"error": "User not found"}), 404
-        _ensure_user_fields(u)
-        now_ts   = datetime.utcnow()
-        active   = [f for f in u["futures"] if f["status"] == "active"]
-        settled  = sorted([f for f in u["futures"] if f["status"] != "active"],
-                          key=lambda x: x.get("settled_at", ""), reverse=True)[:20]
-        enriched = []
-        for f in active:
-            s         = market["stocks"].get(f["ticker"])
-            expiry    = datetime.fromisoformat(f["expires_at"])
-            secs_left = max(0, int((expiry - now_ts).total_seconds()))
-            enriched.append({**f,
-                "current_price": round(s["current_price"], 4) if s else None,
-                "seconds_left":  secs_left,
-            })
-        return jsonify({"active": enriched, "settled": settled,
-                        "cost": FUTURES_COST, "payout": FUTURES_PAYOUT,
-                        "durations": FUTURES_DURATIONS})
+# Futures feature removed
 
 # ─────────────────────────── PREDICTIONS ──────────────────────
 
@@ -1360,6 +1061,7 @@ def buy_pack():
         cards = _generate_pack_cards(u)
 
         u["pack_history"].append({"ts": now_iso(), "cards": len(cards)})
+        u["pack_history"] = u["pack_history"][-50:]  # cap to last 50
         save(market)
 
     return jsonify({
@@ -1930,6 +1632,27 @@ def admin_reset():
         market = init_market()
     return jsonify({"success": True})
 
+@app.route("/api/admin/reset-users", methods=["POST"])
+def admin_reset_users():
+    """Reset all users' portfolios to empty and ARM Bucks to 30. Keeps stocks, prices, and events intact."""
+    body = request.json or {}
+    if body.get("password") != ADMIN_PASSWORD:
+        return jsonify({"error": "Wrong password"}), 403
+    with lock:
+        count = 0
+        for uid, u in market["users"].items():
+            u["arm_bucks"]        = STARTING_BUCKS
+            u["portfolio"]        = {}
+            u["shiny_portfolio"]  = {}
+            u["etf_portfolio"]    = {}
+            u["futures"]          = []
+            u["prediction_bets"]  = []
+            u["pack_history"]     = []
+            u["notifications"]    = []
+            count += 1
+        save(market)
+    return jsonify({"success": True, "users_reset": count})
+
 @app.route("/api/leaderboard")
 def leaderboard():
     with lock:
@@ -1951,21 +1674,232 @@ def leaderboard():
                 u.get("etf_portfolio", {}).get(fid, 0) * compute_etf_nav(fid)
                 for fid in ETF_FUNDS
             )
-            fut_locked  = sum(f["cost"]   for f in u.get("futures", [])         if f["status"] == "active")
             pred_locked = sum(b["amount"] for b in u.get("prediction_bets", []) if b["status"] == "pending")
             total_cards = sum(u.get("portfolio", {}).values()) + sum(u.get("shiny_portfolio", {}).values())
             rows.append({
                 "username":        u["username"],
                 "arm_bucks":       round(u["arm_bucks"], 2),
                 "portfolio_value": round(pv + shiny_v + etf_v, 2),
-                "total":           round(u["arm_bucks"] + pv + shiny_v + etf_v + fut_locked + pred_locked, 2),
+                "total":           round(u["arm_bucks"] + pv + shiny_v + etf_v + pred_locked, 2),
                 "total_cards":     int(total_cards),
             })
         rows.sort(key=lambda x: x["total"], reverse=True)
     return jsonify(rows)
 
 # ═══════════════════════════════════════════════════════════════
-#  CARD BATTLE
+#  SHOWDOWN BATTLE — helpers
+# ═══════════════════════════════════════════════════════════════
+
+RARITY_MULT = {"NORMAL": 1.0, "BRONZE": 2.0, "SILVER": 3.0, "GOLD": 4.0, "PLATINUM": 5.0}
+BATTLE_HAND_SIZE = 5   # cards per player
+BATTLE_ROUNDS    = 5   # best of 5 (first to 3 wins)
+CALL_WINDOW_SECS = 15  # seconds to press CALL IT after both pick
+
+def _battle_notify(user, msg, battle_id, notif_type="info"):
+    _ensure_user_fields(user)
+    user["notifications"].append({
+        "id":        str(uuid.uuid4()),
+        "type":      notif_type,
+        "battle_id": battle_id,
+        "msg":       msg,
+        "ts":        now_iso(),
+        "read":      False,
+    })
+    user["notifications"] = user["notifications"][-30:]
+
+def _battle_card_strength(card):
+    """Base strength = current_price × rarity multiplier."""
+    return round(card["current_price"] * RARITY_MULT.get(card["tier"], 1.0), 4)
+
+def _name_has(card, *fragments):
+    n = card["name"].lower()
+    return any(f in n for f in fragments)
+
+def _resolve_round(battle, round_num):
+    """
+    Apply all card effects and determine round winner.
+    Returns dict with full resolution details for the log.
+    """
+    c_idx = battle["picks"]["challenger"]
+    r_idx = battle["picks"]["responder"]
+    c_card = battle["hands"]["challenger"][c_idx]
+    r_card = battle["hands"]["responder"][r_idx]
+
+    cs = battle["state"]["challenger"]
+    rs = battle["state"]["responder"]
+
+    def resolve_side(card, state, opp_state, opp_card):
+        name = card["name"].lower()
+        base = _battle_card_strength(card)
+        effects = []
+
+        # Apply incoming pending multiplier (from Tom/Ray x3, Nadia/Bella/Rhiannon/Meg x2)
+        if state.get("next_mult", 1.0) != 1.0:
+            mult = state["next_mult"]
+            base = round(base * mult, 4)
+            effects.append(f"⚡ Pending boost ×{mult} applied!")
+            state["next_mult"] = 1.0
+
+        # Apply hangover (Ryan/Liam)
+        if state.get("hangover"):
+            base = round(base * 0.7, 4)
+            effects.append("🤢 Hangover ×0.7")
+            state["hangover"] = False
+
+        # Apply Lucy debuff (Lucy watched last round)
+        if state.get("lucy_watching") and _name_has(card, "meg", "rhiannon"):
+            base = round(base * 0.2, 4)
+            effects.append(f"👠 Lucy debuffed {card['name']} ×0.2!")
+            state["lucy_watching"] = False
+        elif state.get("lucy_watching"):
+            state["lucy_watching"] = False  # expired without triggering
+
+        # ── Card's own effect ──
+        if _name_has(card, "raman"):
+            mult = random.choice([2.0, 0.25])
+            base = round(base * mult, 4)
+            effects.append(f"🎲 Raman {'ROCKETS ×2!' if mult == 2.0 else 'CRASHES ×0.25!'}")
+
+        elif _name_has(card, "tom jones", "tom") and not _name_has(card, "bottom"):
+            effects.append("📋 Tom is in a meeting (₳0) — but ×3 your next card!")
+            state["next_mult"] = 3.0
+            base = 0.0
+
+        elif _name_has(card, "ray") and not _name_has(card, "rhiannon"):
+            effects.append("🐢 Ray is still settling in (₳0) — ×3 your next card!")
+            state["next_mult"] = 3.0
+            base = 0.0
+
+        elif _name_has(card, "tanya"):
+            if round_num >= 3:
+                effects.append("🚪 Tanya already left! ₳0")
+                base = 0.0
+            else:
+                effects.append("🚪 Tanya is still here (early round)")
+
+        elif _name_has(card, "renae"):
+            base = round(base * 2.0, 4)
+            effects.append("⚡ Renae counts double!")
+
+        elif _name_has(card, "ark"):
+            if random.random() < 0.25:
+                base = round(base * 0.5, 4)
+                effects.append("🤦 Ark took self-damage ×0.5!")
+            else:
+                effects.append("🤦 Ark survived unscathed")
+
+        elif _name_has(card, "nadia", "bella", "rhiannon", "meg"):
+            state["next_mult"] = 2.0
+            effects.append(f"✨ {card['name']} buffs your NEXT card ×2!")
+
+        elif _name_has(card, "lucy"):
+            opp_state["lucy_watching"] = True
+            effects.append("👠 Lucy is watching — opponent's Meg/Rhiannon next round = ×0.2!")
+
+        elif _name_has(card, "ryan", "liam"):
+            base = round(base * 2.0, 4)
+            state["hangover"] = True
+            effects.append(f"🍺 {card['name']} goes hard ×2 — hangover next round (×0.7)")
+
+        elif _name_has(card, "joshua"):
+            last = state.get("last_card_name", "")
+            if "mark" in last.lower():
+                base = round(base * 2.0, 4)
+                effects.append("💪 Joshua after Mark — COMBO ×2!")
+            else:
+                effects.append("💪 Joshua (no Mark combo this time)")
+
+        # Store last card name for combo tracking
+        state["last_card_name"] = card["name"]
+
+        return round(base, 4), effects
+
+    c_strength, c_effects = resolve_side(c_card, cs, rs, r_card)
+    r_strength, r_effects = resolve_side(r_card, rs, cs, c_card)
+
+    # Mark + Jesse tie rule — if both players play Mark or Jesse
+    c_is_mark_jesse = _name_has(c_card, "mark", "jesse")
+    r_is_mark_jesse = _name_has(r_card, "mark", "jesse")
+    force_tie = c_is_mark_jesse and r_is_mark_jesse
+
+    # Determine winner
+    called_by = None
+    call_bonus = False
+    if battle["calls"].get("challenger") or battle["calls"].get("responder"):
+        # Whoever called it
+        caller  = "challenger" if battle["calls"].get("challenger") else "responder"
+        called_by = caller
+        caller_str  = c_strength if caller == "challenger" else r_strength
+        opp_str     = r_strength if caller == "challenger" else c_strength
+        if force_tie:
+            winner_side = None  # tie overrides call
+        elif caller_str > opp_str:
+            winner_side = caller
+            call_bonus  = True   # caller gets 2 pts
+        else:
+            winner_side = "responder" if caller == "challenger" else "challenger"
+            call_bonus  = True   # wrong call — opponent gets 2 pts
+    elif force_tie:
+        winner_side = None
+    elif c_strength > r_strength:
+        winner_side = "challenger"
+    elif r_strength > c_strength:
+        winner_side = "responder"
+    else:
+        winner_side = None  # tie
+
+    pts = 2 if call_bonus else 1
+    if winner_side and not force_tie:
+        battle["scores"][winner_side] += pts
+
+    # Remove played cards from hands
+    battle["hands"]["challenger"].pop(c_idx)
+    battle["hands"]["responder"].pop(r_idx)
+    battle["picks"] = {"challenger": None, "responder": None}
+    battle["calls"] = {"challenger": False, "responder": False}
+
+    def card_snapshot(card):
+        return {"name": card["name"], "image": card["image"], "tier": card["tier"],
+                "ticker": card["ticker"], "current_price": card["current_price"]}
+
+    return {
+        "round":         round_num,
+        "c_card":        card_snapshot(c_card),
+        "r_card":        card_snapshot(r_card),
+        "c_strength":    c_strength,
+        "r_strength":    r_strength,
+        "c_effects":     c_effects,
+        "r_effects":     r_effects,
+        "winner_side":   winner_side,
+        "force_tie":     force_tie,
+        "call_bonus":    call_bonus,
+        "called_by":     called_by,
+        "pts":           pts,
+    }
+
+def _battle_finish(battle, winner_side):
+    loser_side = "responder" if winner_side == "challenger" else "challenger"
+    winner_id  = battle[winner_side + "_id"]
+    loser_id   = battle[loser_side  + "_id"]
+    winner_u   = market["users"].get(winner_id)
+    loser_u    = market["users"].get(loser_id)
+    battle["status"]    = "finished"
+    battle["winner_id"] = winner_id
+    payout = round(battle["bet"] * 2, 2)
+    if winner_u:
+        _ensure_user_fields(winner_u)
+        winner_u["arm_bucks"] += payout
+        _battle_notify(winner_u, f"🏆 You beat {battle[loser_side+'_name']}! +₳{payout:.2f}", battle["id"], "info")
+    if loser_u:
+        _ensure_user_fields(loser_u)
+        _battle_notify(loser_u, f"💀 You lost to {battle[winner_side+'_name']}. -₳{battle['bet']:.2f}", battle["id"], "info")
+    battle["log"].append(f"🏆 {battle[winner_side+'_name']} wins! Payout ₳{payout:.2f}")
+    battle["log"] = battle["log"][-20:]
+    # Strip card data — keep only scores/log
+    battle["hands"] = {"challenger": [], "responder": []}
+
+# ═══════════════════════════════════════════════════════════════
+#  CARD BATTLE — API routes
 # ═══════════════════════════════════════════════════════════════
 
 @app.route("/api/battle/list")
@@ -1974,33 +1908,28 @@ def battle_list():
     with lock:
         u = market["users"].get(uid)
         if not u:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"battles": [], "notif_count": 0})
         _ensure_user_fields(u)
+        notif_count = sum(1 for n in u["notifications"] if not n.get("read"))
         battles = market.get("battles", [])
         my_battles = [b for b in battles if b["challenger_id"] == uid or b["responder_id"] == uid]
-        # Return minimal info for listing
         out = []
         for b in reversed(my_battles[-50:]):
             my_side  = "challenger" if b["challenger_id"] == uid else "responder"
-            opp_side = "responder"  if my_side == "challenger" else "challenger"
+            opp_side = "responder" if my_side == "challenger" else "challenger"
             out.append({
-                "id":             b["id"],
-                "status":         b["status"],
-                "opponent":       b[opp_side + "_name"],
-                "bet":            b["bet"],
-                "current_turn":   b["current_turn"],
-                "my_turn":        b["current_turn"] == uid and b["status"] == "active",
-                "my_side":        my_side,
-                "winner_id":      b.get("winner_id"),
-                "i_won":          b.get("winner_id") == uid,
-                "created_at":     b.get("created_at", ""),
-                "deck_ready":     b.get(my_side + "_deck_ready", False),
-                "turn_number":    b.get("turn_number", 0),
+                "id":       b["id"],
+                "status":   b["status"],
+                "opponent": b[opp_side + "_name"],
+                "bet":      b["bet"],
+                "scores":   b.get("scores", {"challenger": 0, "responder": 0}),
+                "my_side":  my_side,
+                "i_won":    b.get("winner_id") == uid,
+                "round":    b.get("round", 1),
+                "my_pick":  b.get("picks", {}).get(my_side) is not None,
+                "reveal_at": b.get("reveal_at"),
             })
-        # Unread notification count
-        notif_count = sum(1 for n in u["notifications"] if not n["read"])
         return jsonify({"battles": out, "notif_count": notif_count})
-
 
 @app.route("/api/battle/state")
 def battle_state():
@@ -2012,38 +1941,90 @@ def battle_state():
             return jsonify({"error": "Battle not found"}), 404
         if uid not in (battle["challenger_id"], battle["responder_id"]):
             return jsonify({"error": "Not your battle"}), 403
-        my_side  = "challenger" if battle["challenger_id"] == uid else "responder"
-        opp_side = "responder"  if my_side == "challenger" else "challenger"
-        # Hide opponent hand (show count only)
-        opp_state = battle[opp_side]
-        my_state  = battle[my_side]
-        return jsonify({
-            "id":              battle["id"],
-            "status":          battle["status"],
-            "my_side":         my_side,
-            "my_name":         battle[my_side + "_name"],
-            "opp_name":        battle[opp_side + "_name"],
-            "bet":             battle["bet"],
-            "current_turn":    battle["current_turn"],
-            "my_turn":         battle["current_turn"] == uid and battle["status"] == "active",
-            "turn_number":     battle.get("turn_number", 0),
-            "winner_id":       battle.get("winner_id"),
-            "i_won":           battle.get("winner_id") == uid,
-            "my_hand":         my_state["hand"],
-            "my_board":        my_state["board"],
-            "my_deck_count":   len(my_state["deck"]),
-            "opp_hand_count":  len(opp_state["hand"]),
-            "opp_board":       opp_state["board"],
-            "opp_deck_count":  len(opp_state["deck"]),
-            "log":             battle["log"][-30:],
-            "deck_ready":      battle.get(my_side + "_deck_ready", False),
-            "opp_deck_ready":  battle.get(opp_side + "_deck_ready", False),
-        })
 
+        my_side  = "challenger" if battle["challenger_id"] == uid else "responder"
+        opp_side = "responder" if my_side == "challenger" else "challenger"
+
+        # Auto-reveal if call window has expired and both picked
+        if (battle["status"] == "in_progress"
+                and battle["picks"]["challenger"] is not None
+                and battle["picks"]["responder"] is not None
+                and battle.get("reveal_at")):
+            deadline = datetime.fromisoformat(battle["reveal_at"])
+            if datetime.utcnow() >= deadline:
+                result = _resolve_round(battle, battle["round"])
+                battle["round_results"].append(result)
+                # Build log line
+                tie_str = " 😤 MARK+JESSE TIE!" if result["force_tie"] else ""
+                call_str = f" 🔥 {battle[result['called_by']+'_name']} CALLED IT!" if result["called_by"] else ""
+                pts_str  = f" (+{result['pts']} pts)" if result["winner_side"] else ""
+                winner_name = battle[result["winner_side"]+"_name"] if result["winner_side"] else "TIE"
+                battle["log"].append(
+                    f"Round {result['round']}: {battle['challenger_name']} ₳{result['c_strength']} vs "
+                    f"{battle['responder_name']} ₳{result['r_strength']}{call_str}{tie_str} → {winner_name} wins{pts_str}"
+                )
+                battle["log"] = battle["log"][-20:]
+                battle["reveal_at"] = None
+                battle["round"] += 1
+                # Check if match is over (first to 3, or 5 rounds played)
+                scores = battle["scores"]
+                if scores["challenger"] >= 3:
+                    _battle_finish(battle, "challenger")
+                elif scores["responder"] >= 3:
+                    _battle_finish(battle, "responder")
+                elif battle["round"] > BATTLE_ROUNDS:
+                    # All 5 rounds played — most points wins
+                    if scores["challenger"] > scores["responder"]:
+                        _battle_finish(battle, "challenger")
+                    elif scores["responder"] > scores["challenger"]:
+                        _battle_finish(battle, "responder")
+                    else:
+                        # True tie — nobody wins, bets returned
+                        battle["status"] = "finished"
+                        battle["winner_id"] = None
+                        for side_k in ("challenger", "responder"):
+                            u = market["users"].get(battle[side_k + "_id"])
+                            if u:
+                                u["arm_bucks"] += battle["bet"]
+                        battle["log"].append("🤝 Perfect tie — bets returned!")
+                        battle["hands"] = {"challenger": [], "responder": []}
+                save(market)
+
+        # Build response (hide opponent's pick until reveal)
+        opp_hand_count = len(battle["hands"].get(opp_side, []))
+        my_hand        = battle["hands"].get(my_side, [])
+        my_pick        = battle["picks"].get(my_side)
+        opp_picked     = battle["picks"].get(opp_side) is not None
+
+        # Last round result (for display after reveal)
+        last_result = battle["round_results"][-1] if battle.get("round_results") else None
+
+        return jsonify({
+            "id":             battle["id"],
+            "status":         battle["status"],
+            "round":          battle.get("round", 1),
+            "max_rounds":     BATTLE_ROUNDS,
+            "scores":         battle.get("scores", {}),
+            "my_side":        my_side,
+            "my_hand":        my_hand,
+            "my_pick":        my_pick,
+            "opp_hand_count": opp_hand_count,
+            "opp_picked":     opp_picked,
+            "opp_name":       battle[opp_side + "_name"],
+            "my_name":        battle[my_side  + "_name"],
+            "reveal_at":      battle.get("reveal_at"),
+            "calls":          battle.get("calls", {}),
+            "log":            battle.get("log", []),
+            "last_result":    last_result,
+            "winner_id":      battle.get("winner_id"),
+            "i_won":          battle.get("winner_id") == uid,
+            "bet":            battle["bet"],
+            "hands_ready":    battle.get("hands_ready", {}),
+        })
 
 @app.route("/api/battle/challenge", methods=["POST"])
 def battle_challenge():
-    body            = request.json or {}
+    body = request.json or {}
     uid             = body.get("user_id", "")
     target_username = body.get("target_username", "").strip()
     bet             = float(body.get("bet", 0))
@@ -2056,7 +2037,9 @@ def battle_challenge():
             return jsonify({"error": "Bet cannot be negative"}), 400
         if u["arm_bucks"] < bet:
             return jsonify({"error": f"Not enough ₳ — you have ₳{u['arm_bucks']:.2f}"}), 400
-        # Find target
+        total_cards = sum(u["portfolio"].values()) + sum(u["shiny_portfolio"].values())
+        if total_cards < BATTLE_HAND_SIZE:
+            return jsonify({"error": f"Need at least {BATTLE_HAND_SIZE} stock cards to battle (you have {total_cards})"}), 400
         target_uid, target_u = None, None
         for tid, tu in market["users"].items():
             if tu["username"].lower() == target_username.lower():
@@ -2067,404 +2050,201 @@ def battle_challenge():
         if target_uid == uid:
             return jsonify({"error": "Cannot challenge yourself"}), 400
         _ensure_user_fields(target_u)
-        # Check holdings — need ≥ 10 cards (normal + shiny combined)
-        total_my = sum(u["portfolio"].values()) + sum(u["shiny_portfolio"].values())
-        if total_my < BATTLE_DECK_SIZE:
-            return jsonify({"error": f"You need at least {BATTLE_DECK_SIZE} stock cards to battle (you have {total_my})"}), 400
-        # Lock bet immediately
         u["arm_bucks"] -= bet
         battle_id = str(uuid.uuid4())
         battle = {
-            "id":                    battle_id,
-            "status":                "pending_response",
-            "challenger_id":         uid,
-            "challenger_name":       u["username"],
-            "challenger_deck_ready": False,
-            "responder_id":          target_uid,
-            "responder_name":        target_u["username"],
-            "responder_deck_ready":  False,
-            "bet":                   round(bet, 2),
-            "current_turn":          target_uid,   # responder goes first
-            "turn_number":           0,
-            "created_at":            now_iso(),
-            "winner_id":             None,
-            "challenger":            {"hand": [], "board": [], "deck": []},
-            "responder":             {"hand": [], "board": [], "deck": []},
-            "log":                   [f"{u['username']} challenges {target_u['username']} to a card battle! Bet: ₳{bet:.2f}"],
+            "id":               battle_id,
+            "status":           "pending_response",
+            "challenger_id":    uid,
+            "challenger_name":  u["username"],
+            "responder_id":     target_uid,
+            "responder_name":   target_u["username"],
+            "bet":              round(bet, 2),
+            "round":            1,
+            "scores":           {"challenger": 0, "responder": 0},
+            "hands":            {"challenger": None, "responder": None},
+            "hands_ready":      {"challenger": False, "responder": False},
+            "picks":            {"challenger": None, "responder": None},
+            "calls":            {"challenger": False, "responder": False},
+            "reveal_at":        None,
+            "state": {
+                "challenger": {"next_mult": 1.0, "hangover": False, "lucy_watching": False, "last_card_name": ""},
+                "responder":  {"next_mult": 1.0, "hangover": False, "lucy_watching": False, "last_card_name": ""},
+            },
+            "round_results":    [],
+            "log":              [f"{u['username']} challenges {target_u['username']}! Bet: ₳{bet:.2f}"],
+            "created_at":       now_iso(),
+            "winner_id":        None,
         }
         market["battles"].append(battle)
-        _battle_notify(target_u, f"⚔ {u['username']} challenges you to a battle! Bet: ₳{bet:.2f}", battle_id, "challenge")
+        _battle_notify(target_u, f"⚔ {u['username']} challenges you! Bet: ₳{bet:.2f}", battle_id, "challenge")
         save(market)
     return jsonify({"success": True, "battle_id": battle_id})
-
 
 @app.route("/api/battle/respond", methods=["POST"])
 def battle_respond():
     body      = request.json or {}
     uid       = body.get("user_id", "")
     battle_id = body.get("battle_id", "")
-    accept    = bool(body.get("accept", False))
+    accept    = body.get("accept", False)
     with lock:
         battle = next((b for b in market.get("battles", []) if b["id"] == battle_id), None)
         if not battle:
             return jsonify({"error": "Battle not found"}), 404
         if battle["responder_id"] != uid:
-            return jsonify({"error": "Not the challenged player"}), 403
+            return jsonify({"error": "Not your challenge"}), 403
         if battle["status"] != "pending_response":
-            return jsonify({"error": "Battle is no longer pending"}), 400
-        challenger_u = market["users"].get(battle["challenger_id"])
-        responder_u  = market["users"].get(uid)
-        _ensure_user_fields(responder_u)
-        _ensure_user_fields(challenger_u)
+            return jsonify({"error": "Already responded"}), 400
+        u = market["users"].get(uid)
+        _ensure_user_fields(u)
         if not accept:
             battle["status"] = "declined"
-            # Refund challenger
-            if challenger_u:
-                challenger_u["arm_bucks"] += battle["bet"]
-                _battle_notify(challenger_u, f"❌ {responder_u['username']} declined your battle challenge. Bet refunded.", battle_id, "info")
+            # Return challenger's bet
+            cu = market["users"].get(battle["challenger_id"])
+            if cu:
+                cu["arm_bucks"] += battle["bet"]
+            battle["log"].append(f"{u['username']} declined the challenge.")
             save(market)
             return jsonify({"success": True, "accepted": False})
-        # Check responder has enough cards and ₳
-        total_resp = sum(responder_u["portfolio"].values()) + sum(responder_u["shiny_portfolio"].values())
-        if total_resp < BATTLE_DECK_SIZE:
-            return jsonify({"error": f"You need at least {BATTLE_DECK_SIZE} stock cards to battle (you have {total_resp})"}), 400
-        if responder_u["arm_bucks"] < battle["bet"]:
-            return jsonify({"error": f"Not enough ₳ to cover the bet — you have ₳{responder_u['arm_bucks']:.2f}"}), 400
-        responder_u["arm_bucks"] -= battle["bet"]
-        battle["status"] = "pending_decks"
-        battle["log"].append(f"{responder_u['username']} accepted the challenge! Both players must select their 10-card decks.")
-        _battle_notify(challenger_u, f"✅ {responder_u['username']} accepted your battle! Select your deck to begin.", battle_id, "your_turn")
-        _battle_notify(responder_u,  f"✅ Battle accepted! Select your 10-card deck to begin.", battle_id, "your_turn")
+        # Accept — check responder has enough cards and bucks
+        total_cards = sum(u["portfolio"].values()) + sum(u["shiny_portfolio"].values())
+        if total_cards < BATTLE_HAND_SIZE:
+            return jsonify({"error": f"Need at least {BATTLE_HAND_SIZE} cards (you have {total_cards})"}), 400
+        if u["arm_bucks"] < battle["bet"]:
+            return jsonify({"error": f"Not enough ₳ for the bet (need ₳{battle['bet']:.2f})"}), 400
+        u["arm_bucks"] -= battle["bet"]
+        battle["status"] = "selecting_hands"
+        battle["log"].append(f"{u['username']} accepted! Both players now pick their hand.")
+        cu = market["users"].get(battle["challenger_id"])
+        if cu:
+            _battle_notify(cu, f"⚔ {u['username']} accepted your challenge!", battle_id, "info")
         save(market)
     return jsonify({"success": True, "accepted": True, "battle_id": battle_id})
 
-
-@app.route("/api/battle/select-deck", methods=["POST"])
-def battle_select_deck():
-    """Player submits their 10-card deck selection.
-    Body: {user_id, battle_id, selections: [{ticker, shiny_key}...]}
-    shiny_key is provided for shiny cards, null/absent for normal.
-    """
-    body        = request.json or {}
-    uid         = body.get("user_id", "")
-    battle_id   = body.get("battle_id", "")
-    selections  = body.get("selections", [])    # list of {ticker, shiny_key}
+@app.route("/api/battle/select-hand", methods=["POST"])
+def battle_select_hand():
+    """Player picks their 5 cards from their portfolio."""
+    body      = request.json or {}
+    uid       = body.get("user_id", "")
+    battle_id = body.get("battle_id", "")
+    selections = body.get("selections", [])  # list of {ticker, shiny_key or null}
     with lock:
         battle = next((b for b in market.get("battles", []) if b["id"] == battle_id), None)
         if not battle:
             return jsonify({"error": "Battle not found"}), 404
         if uid not in (battle["challenger_id"], battle["responder_id"]):
             return jsonify({"error": "Not your battle"}), 403
-        if battle["status"] != "pending_decks":
-            return jsonify({"error": "Not in deck selection phase"}), 400
-        u = market["users"].get(uid)
-        if not u:
-            return jsonify({"error": "User not found"}), 404
-        _ensure_user_fields(u)
-        if len(selections) != BATTLE_DECK_SIZE:
-            return jsonify({"error": f"Must select exactly {BATTLE_DECK_SIZE} cards"}), 400
-        side = "challenger" if battle["challenger_id"] == uid else "responder"
-        if battle.get(side + "_deck_ready"):
-            return jsonify({"error": "Deck already submitted"}), 400
-        # ── Director limit: max 2 per deck ──
-        director_count = 0
-        for sel in selections:
-            ticker = sel.get("ticker", "")
-            stock  = market["stocks"].get(ticker)
-            if stock and _battle_get_tier(stock["name"]) == "director":
-                director_count += 1
-        if director_count > BATTLE_MAX_DIRECTORS:
-            return jsonify({"error": f"Too many directors — max {BATTLE_MAX_DIRECTORS} director-tier cards per deck (you selected {director_count})"}), 400
+        if battle["status"] != "selecting_hands":
+            return jsonify({"error": "Not in hand selection phase"}), 400
+        my_side = "challenger" if battle["challenger_id"] == uid else "responder"
+        if battle["hands_ready"][my_side]:
+            return jsonify({"error": "Hand already submitted"}), 400
+        if len(selections) != BATTLE_HAND_SIZE:
+            return jsonify({"error": f"Select exactly {BATTLE_HAND_SIZE} cards"}), 400
 
-        # Validate selections against holdings and build card objects
+        u   = market["users"].get(uid)
+        reg = market.get("shiny_registry", {})
+        _ensure_user_fields(u)
+
+        hand = []
+        # Validate and build hand
         port_copy   = dict(u["portfolio"])
         shiny_copy  = dict(u["shiny_portfolio"])
-        cards = []
         for sel in selections:
-            ticker    = sel.get("ticker", "")
+            ticker    = sel.get("ticker", "").upper()
             shiny_key = sel.get("shiny_key")
-            stock = market["stocks"].get(ticker)
-            if not stock:
-                return jsonify({"error": f"Unknown ticker: {ticker}"}), 400
             if shiny_key:
                 if shiny_copy.get(shiny_key, 0) < 1:
                     return jsonify({"error": f"You don't own shiny card {shiny_key}"}), 400
-                shiny_info = market.get("shiny_registry", {}).get(shiny_key)
-                if not shiny_info:
-                    return jsonify({"error": f"Shiny not in registry: {shiny_key}"}), 400
                 shiny_copy[shiny_key] -= 1
-                card = _battle_make_card(ticker, stock, shiny_key=shiny_key, shiny_info=shiny_info)
+                info  = reg.get(shiny_key, {})
+                stock = market["stocks"].get(info.get("base_ticker", ""), {})
+                hand.append({
+                    "ticker":        ticker,
+                    "name":          info.get("name", ticker),
+                    "image":         info.get("image", ticker + ".jpg"),
+                    "tier":          info.get("tier", "NORMAL"),
+                    "multiplier":    info.get("multiplier", 1.0),
+                    "current_price": round(stock.get("current_price", 1.0), 4),
+                    "shiny_key":     shiny_key,
+                })
             else:
                 if port_copy.get(ticker, 0) < 1:
-                    return jsonify({"error": f"You don't own enough shares of {ticker}"}), 400
+                    return jsonify({"error": f"You don't own enough {ticker}"}), 400
                 port_copy[ticker] -= 1
-                card = _battle_make_card(ticker, stock)
-            cards.append(card)
-        random.shuffle(cards)
-        battle[side]["deck"] = cards
-        battle[side + "_deck_ready"] = True
+                stock = market["stocks"].get(ticker, {})
+                hand.append({
+                    "ticker":        ticker,
+                    "name":          stock.get("name", ticker),
+                    "image":         stock.get("image", ticker + ".jpg"),
+                    "tier":          "NORMAL",
+                    "multiplier":    1.0,
+                    "current_price": round(stock.get("current_price", 1.0), 4),
+                    "shiny_key":     None,
+                })
 
-        # If both ready → start game
-        if battle["challenger_deck_ready"] and battle["responder_deck_ready"]:
-            battle["status"] = "active"
-            for s in ("challenger", "responder"):
-                deck = battle[s]["deck"]
-                battle[s]["hand"] = deck[:BATTLE_START_HAND]
-                battle[s]["deck"] = deck[BATTLE_START_HAND:]
-            battle["log"].append("Both decks ready! Game begins. Responder goes first.")
-            # Apply start-of-turn effects for first player (responder)
-            _battle_start_turn(battle)
-            resp_u = market["users"].get(battle["responder_id"])
-            chal_u = market["users"].get(battle["challenger_id"])
-            _battle_notify(resp_u,  "⚔ Your battle has started — it's YOUR TURN!", battle_id, "your_turn")
-            _battle_notify(chal_u,  "⚔ Your battle has started — waiting for opponent's first move.", battle_id, "info")
-        else:
-            other_id = battle["responder_id"] if side == "challenger" else battle["challenger_id"]
-            other_u  = market["users"].get(other_id)
-            if other_u:
-                _battle_notify(other_u, f"⚔ Opponent has selected their deck. Select yours to begin!", battle_id, "your_turn")
+        battle["hands"][my_side]        = hand
+        battle["hands_ready"][my_side]  = True
+        battle["log"].append(f"{u['username']} locked in their hand.")
+
+        # Both ready — start the game
+        if battle["hands_ready"]["challenger"] and battle["hands_ready"]["responder"]:
+            battle["status"] = "in_progress"
+            battle["log"].append("Both hands locked — FIGHT!")
+
         save(market)
     return jsonify({"success": True})
-
 
 @app.route("/api/battle/play-card", methods=["POST"])
 def battle_play_card():
-    """Play a card from hand to board."""
+    """Player picks a card index from their hand for this round."""
     body      = request.json or {}
     uid       = body.get("user_id", "")
     battle_id = body.get("battle_id", "")
-    card_id   = body.get("card_id", "")
+    card_idx  = int(body.get("card_index", -1))
     with lock:
         battle = next((b for b in market.get("battles", []) if b["id"] == battle_id), None)
-        if not battle: return jsonify({"error": "Battle not found"}), 404
-        if battle["status"] != "active": return jsonify({"error": "Battle not active"}), 400
-        if battle["current_turn"] != uid: return jsonify({"error": "Not your turn"}), 403
-        side     = "challenger" if battle["challenger_id"] == uid else "responder"
-        opp_side = "responder"  if side == "challenger" else "challenger"
-        s = battle[side]
-        if len(s["board"]) >= BATTLE_MAX_BOARD:
-            return jsonify({"error": f"Board full — max {BATTLE_MAX_BOARD} cards"}), 400
-        card = next((c for c in s["hand"] if c["id"] == card_id), None)
-        if not card: return jsonify({"error": "Card not in hand"}), 400
-        effect = card.get("effect")
-        s["hand"].remove(card)
-
-        # ── Renae: no summoning sickness ──
-        if effect == "renae_prepared":
-            card["sick"]       = False
-            card["sick_turns"] = 0
-            battle["log"].append(f"⚡ {card['name']} comes prepared — no summoning sickness!")
-        else:
-            card["sick"]       = True
-            card["sick_turns"] = card.get("sick_turns", 1)
-
-        s["board"].append(card)
-        base_msg = f"{battle[side + '_name']} plays {card['name']} (ATK {card['atk']} / HP {card['hp']})."
-        if effect:
-            base_msg += f" [{effect.replace('_',' ').title()}]"
-        battle["log"].append(base_msg)
-
-        # ── Jenny: heals all friendly board cards +3 HP on play ──
-        if effect == "jenny_tea":
-            healed = 0
-            for c in s["board"]:
-                if c["id"] != card["id"] and c["hp"] < c["max_hp"]:
-                    c["hp"] = min(c["max_hp"], c["hp"] + 3)
-                    healed += 1
-            battle["log"].append(f"☕ {card['name']} brings morning tea! All friendly cards healed +3 HP ({healed} cards).")
-
-        # ── Nadia: draw 1 extra card on play ──
-        if effect == "nadia_eager":
-            if s["deck"]:
-                drawn = s["deck"].pop(0)
-                s["hand"].append(drawn)
-                battle["log"].append(f"📚 {card['name']} is eager to help — draws {drawn['name']}!")
-
-        # ── Lucy aura: admin cards on ALL boards immediately lose 5 HP ──
-        if effect == "lucy_aura":
-            admin_names = ["rhiannon", "meg", "svetlana"]
-            affected = []
-            for bside in ("challenger", "responder"):
-                for bc in battle[bside]["board"]:
-                    if any(n in bc["name"].lower() for n in admin_names):
-                        bc["hp"] = max(0, bc["hp"] - 5)
-                        affected.append(f"{bc['name']} ({bc['hp']} HP)")
-            if affected:
-                battle["log"].append(f"👠 Lucy enters — admin cards tremble! {', '.join(affected)} each lost 5 HP.")
-            else:
-                battle["log"].append(f"👠 Lucy enters — no admin cards in play right now, but they better watch out.")
-            # Remove dead admins
-            for bside in ("challenger", "responder"):
-                battle[bside]["board"] = [c for c in battle[bside]["board"] if c["hp"] > 0]
-
-        # ── Lucy already on board: newly played admin card loses 5 HP ──
-        if effect in ("rhiannon_support", None) or card.get("seniority") == "support":
-            # Check if Lucy is anywhere on the board
-            lucy_in_play = any(
-                c.get("effect") == "lucy_aura"
-                for bside in ("challenger", "responder")
-                for c in battle[bside]["board"]
-            )
-            admin_names = ["rhiannon", "meg", "svetlana"]
-            if lucy_in_play and any(n in card["name"].lower() for n in admin_names):
-                card["hp"] = max(0, card["hp"] - 5)
-                battle["log"].append(f"👠 Lucy's aura hits {card['name']} — loses 5 HP on entry ({card['hp']} HP).")
-                if card["hp"] <= 0:
-                    s["board"] = [c for c in s["board"] if c["hp"] > 0]
-                    battle["log"].append(f"💀 {card['name']} immediately perished from Lucy's aura!")
-
+        if not battle:
+            return jsonify({"error": "Battle not found"}), 404
+        if uid not in (battle["challenger_id"], battle["responder_id"]):
+            return jsonify({"error": "Not your battle"}), 403
+        if battle["status"] != "in_progress":
+            return jsonify({"error": "Battle not in progress"}), 400
+        my_side = "challenger" if battle["challenger_id"] == uid else "responder"
+        if battle["picks"][my_side] is not None:
+            return jsonify({"error": "Already picked this round"}), 400
+        hand = battle["hands"].get(my_side, [])
+        if card_idx < 0 or card_idx >= len(hand):
+            return jsonify({"error": "Invalid card index"}), 400
+        battle["picks"][my_side] = card_idx
+        # If both have picked, open the call window
+        opp_side = "responder" if my_side == "challenger" else "challenger"
+        if battle["picks"][opp_side] is not None and battle.get("reveal_at") is None:
+            deadline = (datetime.utcnow() + timedelta(seconds=CALL_WINDOW_SECS)).isoformat()
+            battle["reveal_at"] = deadline
         save(market)
     return jsonify({"success": True})
 
-
-@app.route("/api/battle/attack", methods=["POST"])
-def battle_attack():
-    """Attack with a board card targeting an opponent's board card."""
-    body        = request.json or {}
-    uid         = body.get("user_id", "")
-    battle_id   = body.get("battle_id", "")
-    attacker_id = body.get("attacker_id", "")
-    target_id   = body.get("target_id", "")
-    with lock:
-        battle = next((b for b in market.get("battles", []) if b["id"] == battle_id), None)
-        if not battle: return jsonify({"error": "Battle not found"}), 404
-        if battle["status"] != "active": return jsonify({"error": "Battle not active"}), 400
-        if battle["current_turn"] != uid: return jsonify({"error": "Not your turn"}), 403
-        my_side  = "challenger" if battle["challenger_id"] == uid else "responder"
-        opp_side = "responder"  if my_side == "challenger" else "challenger"
-        my_s  = battle[my_side]
-        opp_s = battle[opp_side]
-        attacker = next((c for c in my_s["board"] if c["id"] == attacker_id), None)
-        target   = next((c for c in opp_s["board"] if c["id"] == target_id),  None)
-        if not attacker: return jsonify({"error": "Attacker not on your board"}), 400
-        if not target:   return jsonify({"error": "Target not on opponent's board"}), 400
-        if attacker["sick"]:
-            return jsonify({"error": "Card has summoning sickness — wait one turn"}), 400
-        # ── Tom Jones: 'in a meeting' — can't attack ──
-        if attacker.get("in_meeting"):
-            return jsonify({"error": f"{attacker['name']} is in a meeting and can't attack this turn! Try a different card."}), 400
-
-        # ── Mark + Jesse friendly fire: 30% chance they attack each other ──
-        mark_on_board  = [c for c in my_s["board"] if "mark"  in c["name"].lower() and c.get("effect") == "mark_jesse_chaos"]
-        jesse_on_board = [c for c in my_s["board"] if "jesse" in c["name"].lower() and c.get("effect") == "mark_jesse_chaos"]
-        if mark_on_board and jesse_on_board and random.random() < 0.30:
-            # Pick the one that's NOT the attacker as the chaos victim
-            chaos_pair = [c for c in (mark_on_board + jesse_on_board) if c["id"] != attacker["id"]]
-            if chaos_pair:
-                friendly_target = random.choice(chaos_pair)
-                if "jesse" in attacker["name"].lower():
-                    msg = f"😤 Jesse got upset and attacked Mark instead!"
-                else:
-                    msg = f"😤 Mark got upset and attacked Jesse instead!"
-                # Both deal damage to each other
-                atk_dmg = attacker["atk"]
-                def_dmg = friendly_target["atk"]
-                attacker["hp"]       = max(0, attacker["hp"]       - def_dmg)
-                friendly_target["hp"] = max(0, friendly_target["hp"] - atk_dmg)
-                battle["log"].append(f"{msg} {attacker['name']} HP→{attacker['hp']}, {friendly_target['name']} HP→{friendly_target['hp']}.")
-                my_s["board"] = [c for c in my_s["board"] if c["hp"] > 0]
-                winner_side = _battle_check_win(battle)
-                if winner_side:
-                    _battle_finish(battle, winner_side)
-                save(market)
-                return jsonify({"success": True, "chaos": True, "msg": msg})
-
-        # ── Bella enthusiasm: +1 bonus damage while on board ──
-        bella_bonus = 1 if any(c.get("effect") == "bella_enthusiasm" for c in my_s["board"]) else 0
-        actual_atk  = round(attacker["atk"] + bella_bonus, 2)
-        if bella_bonus:
-            battle["log"].append(f"🌟 Bella's enthusiasm grants +1 bonus ATK to {attacker['name']} this attack!")
-
-        # ── Hearthstone combat: both deal damage simultaneously ──
-        attacker["hp"] = max(0, attacker["hp"] - target["atk"])
-        target["hp"]   = max(0, target["hp"]   - actual_atk)
-        battle["log"].append(
-            f"{attacker['name']} ({actual_atk} ATK) ⚔ {target['name']} ({target['atk']} ATK). "
-            f"Scores: {attacker['name']} HP→{attacker['hp']}, {target['name']} HP→{target['hp']}."
-        )
-
-        # ── Ark: takes 1 self-damage after attacking ──
-        if attacker.get("effect") == "ark_self_damage" and attacker["hp"] > 0:
-            attacker["hp"] = max(0, attacker["hp"] - 1)
-            battle["log"].append(f"🤦 {attacker['name']} hurt himself in the confusion! (-1 HP, now {attacker['hp']} HP)")
-
-        # Remove dead cards
-        dead_mine = [c for c in my_s["board"]  if c["hp"] <= 0]
-        dead_opp  = [c for c in opp_s["board"] if c["hp"] <= 0]
-        if dead_mine:
-            battle["log"].append(f"{battle[my_side + '_name']} loses: {', '.join(c['name'] for c in dead_mine)}.")
-        if dead_opp:
-            battle["log"].append(f"{battle[opp_side + '_name']} loses: {', '.join(c['name'] for c in dead_opp)}.")
-        my_s["board"]  = [c for c in my_s["board"]  if c["hp"] > 0]
-        opp_s["board"] = [c for c in opp_s["board"] if c["hp"] > 0]
-        # Check win condition
-        winner_side = _battle_check_win(battle)
-        if winner_side:
-            _battle_finish(battle, winner_side)
-        save(market)
-    return jsonify({"success": True})
-
-
-@app.route("/api/battle/use-ability", methods=["POST"])
-def battle_use_ability():
-    """Use a Support/Admin card's heal ability on a friendly board card."""
-    body      = request.json or {}
-    uid       = body.get("user_id", "")
-    battle_id = body.get("battle_id", "")
-    healer_id = body.get("healer_id", "")   # the support/admin card doing the healing
-    target_id = body.get("target_id", "")   # friendly board card to heal
-    with lock:
-        battle = next((b for b in market.get("battles", []) if b["id"] == battle_id), None)
-        if not battle: return jsonify({"error": "Battle not found"}), 404
-        if battle["status"] != "active": return jsonify({"error": "Battle not active"}), 400
-        if battle["current_turn"] != uid: return jsonify({"error": "Not your turn"}), 403
-        side = "challenger" if battle["challenger_id"] == uid else "responder"
-        s = battle[side]
-        healer = next((c for c in s["board"] if c["id"] == healer_id), None)
-        target = next((c for c in s["board"] if c["id"] == target_id), None)
-        if not healer: return jsonify({"error": "Healer not on your board"}), 400
-        if not target: return jsonify({"error": "Target not on your board"}), 400
-        if healer["seniority"] != "support":
-            return jsonify({"error": "Only Support/Admin cards can heal"}), 400
-        if healer.get("ability_used"):
-            return jsonify({"error": "This card already used its ability this turn"}), 400
-        heal_amount = 5
-        old_hp = target["hp"]
-        target["hp"] = min(target["max_hp"], target["hp"] + heal_amount)
-        healer["ability_used"] = True
-        battle["log"].append(
-            f"{healer['name']} heals {target['name']} for {heal_amount} HP ({old_hp} → {target['hp']})."
-        )
-        save(market)
-    return jsonify({"success": True})
-
-
-@app.route("/api/battle/end-turn", methods=["POST"])
-def battle_end_turn():
+@app.route("/api/battle/call-it", methods=["POST"])
+def battle_call_it():
+    """Player presses CALL IT — claiming their card wins this round."""
     body      = request.json or {}
     uid       = body.get("user_id", "")
     battle_id = body.get("battle_id", "")
     with lock:
         battle = next((b for b in market.get("battles", []) if b["id"] == battle_id), None)
-        if not battle: return jsonify({"error": "Battle not found"}), 404
-        if battle["status"] != "active": return jsonify({"error": "Battle not active"}), 400
-        if battle["current_turn"] != uid: return jsonify({"error": "Not your turn"}), 403
-        my_side  = "challenger" if battle["challenger_id"] == uid else "responder"
-        opp_side = "responder"  if my_side == "challenger" else "challenger"
-        opp_uid  = battle[opp_side + "_id"]
-        _battle_end_turn(battle)
-        # Check win (director aura might have killed something)
-        winner_side = _battle_check_win(battle)
-        if winner_side:
-            _battle_finish(battle, winner_side)
-        else:
-            battle["log"].append(f"{battle[my_side + '_name']} ends their turn.")
-            opp_u = market["users"].get(opp_uid)
-            if opp_u:
-                _battle_notify(opp_u, f"⚔ It's your turn in the battle vs {battle[my_side + '_name']}!", battle_id, "your_turn")
+        if not battle:
+            return jsonify({"error": "Battle not found"}), 404
+        if uid not in (battle["challenger_id"], battle["responder_id"]):
+            return jsonify({"error": "Not your battle"}), 403
+        my_side = "challenger" if battle["challenger_id"] == uid else "responder"
+        if battle["picks"][my_side] is None:
+            return jsonify({"error": "Pick a card first"}), 400
+        battle["calls"][my_side] = True
+        # Calling forces an immediate reveal — set deadline to now
+        battle["reveal_at"] = datetime.utcnow().isoformat()
         save(market)
     return jsonify({"success": True})
-
 
 @app.route("/api/battle/forfeit", methods=["POST"])
 def battle_forfeit():
@@ -2473,29 +2253,36 @@ def battle_forfeit():
     battle_id = body.get("battle_id", "")
     with lock:
         battle = next((b for b in market.get("battles", []) if b["id"] == battle_id), None)
-        if not battle: return jsonify({"error": "Battle not found"}), 404
+        if not battle:
+            return jsonify({"error": "Battle not found"}), 404
         if uid not in (battle["challenger_id"], battle["responder_id"]):
             return jsonify({"error": "Not your battle"}), 403
-        if battle["status"] not in ("active", "pending_decks"):
-            return jsonify({"error": "Cannot forfeit this battle"}), 400
-        loser_side  = "challenger" if battle["challenger_id"] == uid else "responder"
-        winner_side = "responder"  if loser_side == "challenger" else "challenger"
-        battle["log"].append(f"{battle[loser_side + '_name']} forfeits!")
-        _battle_finish(battle, winner_side)
+        if battle["status"] == "finished":
+            return jsonify({"error": "Already finished"}), 400
+        my_side  = "challenger" if battle["challenger_id"] == uid else "responder"
+        opp_side = "responder" if my_side == "challenger" else "challenger"
+        # If pending, return challenger's bet only (responder never paid)
+        if battle["status"] in ("pending_response", "selecting_hands", "declined"):
+            cu = market["users"].get(battle["challenger_id"])
+            if cu and battle["status"] != "declined":
+                cu["arm_bucks"] += battle["bet"]
+            battle["status"] = "finished"
+            battle["winner_id"] = None
+            save(market)
+            return jsonify({"success": True})
+        _battle_finish(battle, opp_side)
         save(market)
     return jsonify({"success": True})
-
 
 @app.route("/api/battle/notifications")
 def battle_notifications():
     uid = request.args.get("user_id", "")
     with lock:
         u = market["users"].get(uid)
-        if not u: return jsonify({"error": "User not found"}), 404
+        if not u:
+            return jsonify({"notifications": []})
         _ensure_user_fields(u)
-        notifs = list(reversed(u["notifications"]))
-        return jsonify({"notifications": notifs[:20]})
-
+        return jsonify({"notifications": u["notifications"]})
 
 @app.route("/api/battle/notifications/read", methods=["POST"])
 def battle_notifs_read():
@@ -2503,35 +2290,14 @@ def battle_notifs_read():
     uid  = body.get("user_id", "")
     with lock:
         u = market["users"].get(uid)
-        if not u: return jsonify({"error": "User not found"}), 404
+        if not u:
+            return jsonify({"success": False})
         _ensure_user_fields(u)
         for n in u["notifications"]:
             n["read"] = True
         save(market)
     return jsonify({"success": True})
 
-
-def _battle_finish(battle, winner_side):
-    """Settle a finished battle — pay out winner, notify both players."""
-    loser_side = "responder" if winner_side == "challenger" else "challenger"
-    winner_id  = battle[winner_side + "_id"]
-    loser_id   = battle[loser_side  + "_id"]
-    winner_u   = market["users"].get(winner_id)
-    loser_u    = market["users"].get(loser_id)
-    battle["status"]    = "finished"
-    battle["winner_id"] = winner_id
-    # Payout: winner gets their own bet back + loser's bet
-    payout = battle["bet"] * 2
-    if winner_u:
-        _ensure_user_fields(winner_u)
-        winner_u["arm_bucks"] += payout
-        _battle_notify(winner_u, f"🏆 You WON the battle vs {battle[loser_side + '_name']}! +₳{payout:.2f}", battle["id"], "info")
-    if loser_u:
-        _ensure_user_fields(loser_u)
-        _battle_notify(loser_u,  f"💀 You LOST the battle vs {battle[winner_side + '_name']}. -₳{battle['bet']:.2f}", battle["id"], "info")
-    battle["log"].append(
-        f"🏆 {battle[winner_side + '_name']} wins! Payout: ₳{payout:.2f}"
-    )
 
 
 # ─────────────────────────── BACKGROUND THREAD ────────────────
@@ -2604,11 +2370,20 @@ def background_loop():
                             u["arm_bucks"] += round(units * nav * div_rate, 4)
                     market["last_dividend"] = n.isoformat()
 
-                # ── Trim battles list to avoid unbounded growth ──
-                if len(market.get("battles", [])) > 200:
-                    completed = [b for b in market["battles"] if b.get("status") == "finished"]
-                    active    = [b for b in market["battles"] if b.get("status") != "finished"]
-                    market["battles"] = active + completed[-50:]
+                # ── Trim battles + strip card data from finished battles ──
+                for b in market.get("battles", []):
+                    if b.get("status") == "finished":
+                        # Wipe heavy card arrays from old finished battles
+                        for side in ("challenger", "responder"):
+                            if b.get(side) and (b[side].get("deck") or b[side].get("hand") or b[side].get("board")):
+                                b[side] = {"hand": [], "board": [], "deck": []}
+                        # Trim log
+                        if len(b.get("log", [])) > 30:
+                            b["log"] = b["log"][-30:]
+                # Keep only last 50 finished + all active
+                completed = [b for b in market["battles"] if b.get("status") == "finished"]
+                active    = [b for b in market["battles"] if b.get("status") != "finished"]
+                market["battles"] = active + completed[-50:]
 
                 # ── Save every 2nd tick (60s) ──
                 if _tick % 2 == 0:
