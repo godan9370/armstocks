@@ -340,6 +340,16 @@ def _resolve_wheel_spin(u, free=False):
     return outcome, land_angle, reward
 
 
+def pred_odds(p):
+    """Return (yes_mult, no_mult) — how much ₳ back per ₳1 bet if that side wins."""
+    y, n = p["yes_bets"], p["no_bets"]
+    total = y + n
+    if total == 0:
+        return None, None
+    yes_mult = round(total / y, 2) if y > 0 else None
+    no_mult  = round(total / n, 2) if n > 0 else None
+    return yes_mult, no_mult
+
 # ─────────────────────────── DATA I/O ─────────────────────────
 def _get_db_conn():
     """Return a psycopg2 connection if DATABASE_URL is set, else None."""

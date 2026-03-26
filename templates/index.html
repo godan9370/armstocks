@@ -1617,8 +1617,12 @@ function showPredTab(tab, btn) {
 
 async function fetchPredictions() {
   if (!userId) return;
-  const r = await fetch(`/api/predictions?user_id=${userId}`);
-  const preds = await r.json();
+  let preds;
+  try {
+    const r = await fetch(`/api/predictions?user_id=${userId}`);
+    if (!r.ok) return;
+    preds = await r.json();
+  } catch(e) { return; }
   window._lastPreds = preds;
 
   // Detect newly resolved bets
