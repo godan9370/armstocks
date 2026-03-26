@@ -3281,7 +3281,7 @@ function renderDeckSelectGrid(pd) {
       cards.push({
         ticker: h.ticker, shiny_key: null, name: h.name,
         image: h.image, tier: 'NORMAL', multiplier: 1.0,
-        atk: h.price, hp: null, key: `${h.ticker}_normal_${i}`,
+        atk: h.current_price, hp: null, key: `${h.ticker}_normal_${i}`,
         is_director: h.name && isDirectorName(h.name),
       });
     }
