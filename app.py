@@ -658,11 +658,34 @@ def load():
         conn.close()
 
 def init_market():
-    existing = load()
-    # If DB is configured but unreachable, return a minimal stub rather than
-    # wiping the database with fresh data. Routes will still work; data will
-    # reload from DB once the connection recovers on next save/restart.
+    # Retry loading up to 5 times — Render free tier DB can take a few seconds
+    # to accept connections after a cold deploy. Without retries, a brief hiccup
+    # means load() returns DB_UNAVAILABLE and init wipes real data with a fresh market.
+    existing = None
+    if _DATABASE_URL:
+        for attempt in range(1, 6):
+            result = load()
+            if result != "DB_UNAVAILABLE":
+                existing = result
+                print(f"  [DB] load succeeded on attempt {attempt}")
+                break
+            print(f"  [DB] load attempt {attempt}/5 failed — retrying in 3s…")
+            time.sleep(3)
+        else:
+            # All 5 attempts failed
+            print("  [DB] All load attempts failed — starting with empty stub. DO NOT overwrite DB.")
+            return {
+                "phase": "trading", "created": now_iso(), "last_drift": now_iso(),
+                "last_dividend": now_iso(), "users": {}, "stocks": {}, "events": [],
+                "predictions": [], "shiny_registry": {}, "shiny_listings": [],
+                "radio_playlist": "", "etf_dividends_paid": 0.0,
+                "_db_unavailable": True,
+            }
+    else:
+        existing = load()   # local dev JSON path
+
     if existing == "DB_UNAVAILABLE":
+        # Shouldn't reach here after retry loop, but guard anyway
         print("  [DB] Starting with empty stub — DB unavailable at startup. DO NOT overwrite DB.")
         return {
             "phase": "trading", "created": now_iso(), "last_drift": now_iso(),
@@ -2476,6 +2499,23 @@ def background_loop():
         time.sleep(60)
         try:
             with lock:
+                # ── DB stub recovery: if startup failed to load, retry now ──
+                if market.get("_db_unavailable") and _DATABASE_URL:
+                    print("  [DB] Attempting stub recovery — trying to reload from DB…")
+                    recovered = load()
+                    if recovered and recovered != "DB_UNAVAILABLE":
+                        print(f"  [DB] Recovery SUCCESS — reloaded market with {len(recovered.get('users',{}))} users")
+                        market = recovered
+                        # Add any missing keys
+                        if "battles" not in market: market["battles"] = []
+                        if "radio_playlist" not in market: market["radio_playlist"] = ""
+                        market["phase"] = "trading"
+                    else:
+                        print("  [DB] Recovery failed — still unavailable")
+                    # Don't run other background tasks if still in stub mode
+                    if market.get("_db_unavailable"):
+                        continue
+
                 n = datetime.utcnow()
 
                 # ── Futures settlement ──
