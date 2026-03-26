@@ -2530,8 +2530,10 @@ def _battle_finish(battle, winner_side):
 # ─────────────────────────── BACKGROUND THREAD ────────────────
 def background_loop():
     global market
+    _tick = 0
     while True:
-        time.sleep(60)
+        time.sleep(15)   # tick every 15s; full market tasks run every 4th tick (60s)
+        _tick += 1
         try:
             with lock:
                 # ── DB stub recovery: if startup failed to load, retry now ──
@@ -2575,13 +2577,14 @@ def background_loop():
                     active  = [c for c in u["futures"] if c["status"] == "active"]
                     u["futures"] = active + settled[-30:]
 
-                # ── Micro-fluctuation (every tick) ──
-                for ticker, s in market["stocks"].items():
-                    micro = random.gauss(0, 0.003)   # ±0.3% std per minute
-                    s["current_price"] = round(max(0.01, s["current_price"] * (1 + micro)), 4)
-                    s["price_history"].append({"ts": n.isoformat(),
-                                               "price": s["current_price"],
-                                               "volume": 0, "type": "micro"})
+                # ── Micro-fluctuation (every 60s = every 4th tick) ──
+                if _tick % 4 == 0:
+                    for ticker, s in market["stocks"].items():
+                        micro = random.gauss(0, 0.003)   # ±0.3% std per minute
+                        s["current_price"] = round(max(0.01, s["current_price"] * (1 + micro)), 4)
+                        s["price_history"].append({"ts": n.isoformat(),
+                                                   "price": s["current_price"],
+                                                   "volume": 0, "type": "micro"})
 
                 # ── Larger random drift (every DRIFT_INTERVAL seconds) ──
                 last_drift = datetime.fromisoformat(market.get("last_drift", n.isoformat()))
@@ -2644,10 +2647,39 @@ def _sigterm_handler(signum, frame):
     _shutdown_save()
     # Restore default and re-raise so gunicorn can finish its graceful shutdown
     signal.signal(signal.SIGTERM, signal.SIG_DFL)
-    os.kill(os.getpid(), signal.SIGTERM)
+    signal.signal(signal.SIGQUIT, signal.SIG_DFL)
+    os.kill(os.getpid(), signum)
 
+# gunicorn sends SIGTERM to master, SIGQUIT to gthread workers — handle both
 signal.signal(signal.SIGTERM, _sigterm_handler)
-atexit.register(_shutdown_save)  # also catches normal exits
+signal.signal(signal.SIGQUIT, _sigterm_handler)
+atexit.register(_shutdown_save)  # belt-and-suspenders for any exit path
+
+# ── Delayed startup reload ───────────────────────────────────────
+# Render starts the new instance BEFORE terminating the old one.
+# The old instance saves on SIGQUIT/SIGTERM; we wait 30s then reload
+# from DB to pick up that final save.
+def _delayed_startup_reload():
+    time.sleep(30)
+    print("  [DB] Delayed startup reload — checking for fresher DB state…", flush=True)
+    global market
+    try:
+        with lock:
+            if market.get("_db_unavailable"):
+                return
+            fresh = load()
+            if fresh and fresh != "DB_UNAVAILABLE":
+                # Merge: update in-memory market with whatever changed in DB
+                market.update(fresh)
+                market.pop("_db_unavailable", None)
+                market["phase"] = "trading"
+                print(f"  [DB] Delayed reload complete — {len(fresh.get('users',{}))} users", flush=True)
+            else:
+                print("  [DB] Delayed reload skipped — DB unavailable", flush=True)
+    except Exception as e:
+        print(f"  [DB] Delayed reload error: {e}", flush=True)
+
+threading.Thread(target=_delayed_startup_reload, daemon=True).start()
 
 # ─────────────────────────── MAIN ─────────────────────────────
 if __name__ == "__main__":
