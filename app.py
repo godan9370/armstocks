@@ -1948,11 +1948,13 @@ def leaderboard():
             )
             fut_locked  = sum(f["cost"]   for f in u.get("futures", [])         if f["status"] == "active")
             pred_locked = sum(b["amount"] for b in u.get("prediction_bets", []) if b["status"] == "pending")
+            total_cards = sum(u.get("portfolio", {}).values()) + sum(u.get("shiny_portfolio", {}).values())
             rows.append({
                 "username":        u["username"],
                 "arm_bucks":       round(u["arm_bucks"], 2),
                 "portfolio_value": round(pv + shiny_v + etf_v, 2),
                 "total":           round(u["arm_bucks"] + pv + shiny_v + etf_v + fut_locked + pred_locked, 2),
+                "total_cards":     int(total_cards),
             })
         rows.sort(key=lambda x: x["total"], reverse=True)
     return jsonify(rows)

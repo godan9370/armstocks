@@ -3110,16 +3110,17 @@ function tierBadgeStyle(tier) {
 }
 
 // ── Challenge modal ──
-function openChallengeModal() {
+function openChallengeModal(preselect) {
   if (!userId) { toast('Log in first', 'err'); return; }
-  // Build a simple prompt-based modal using existing modal infra
-  const users = window._allUsersList || [];
-  let html = `<div style="padding:4px">
-    <div style="color:var(--pink);font-size:1.6rem;margin-bottom:14px">⚔ CHALLENGE A PLAYER</div>
-    <div style="margin-bottom:10px;color:var(--dim);font-size:.88rem">Winner gets both bets. Minimum 10 cards required to play.</div>
+  const html = `<div style="padding:4px">
+    <div style="color:var(--pink);font-size:1.6rem;margin-bottom:6px">⚔ CHALLENGE A PLAYER</div>
+    <div style="margin-bottom:12px;color:var(--dim);font-size:.85rem">Winner takes both bets. Need ≥10 cards to play.</div>
+    <div id="challengePlayerList" style="margin-bottom:14px;max-height:260px;overflow-y:auto">
+      <div style="color:var(--dim);font-size:.85rem">Loading players…</div>
+    </div>
     <div style="margin-bottom:12px">
       <div style="color:var(--dim);font-size:.85rem;margin-bottom:4px">OPPONENT</div>
-      <input id="challengeTargetInput" class="big-input" style="font-size:1.1rem" placeholder="Enter their username" list="usernameSuggestions">
+      <input id="challengeTargetInput" class="big-input" style="font-size:1.1rem" placeholder="Username" list="usernameSuggestions">
       <datalist id="usernameSuggestions"></datalist>
     </div>
     <div style="margin-bottom:16px">
@@ -3130,11 +3131,39 @@ function openChallengeModal() {
   </div>`;
   document.getElementById('tradeModalBody').innerHTML = html;
   document.getElementById('tradeModal').classList.add('open');
-  // Populate datalist
+  if (preselect) document.getElementById('challengeTargetInput').value = preselect;
+  // Fetch players and build clickable list
   fetch('/api/leaderboard').then(r=>r.json()).then(rows=>{
     window._allUsersList = rows;
     const dl = document.getElementById('usernameSuggestions');
-    if (dl) rows.forEach(r=>{ if(r.username!==myUsername){ const o=document.createElement('option'); o.value=r.username; dl.appendChild(o); }});
+    const listEl = document.getElementById('challengePlayerList');
+    const others = rows.filter(r => r.username !== myUsername);
+    if (!others.length) {
+      if (listEl) listEl.innerHTML = '<div style="color:var(--dim);font-size:.85rem">No other players yet.</div>';
+      return;
+    }
+    if (dl) others.forEach(r=>{ const o=document.createElement('option'); o.value=r.username; dl.appendChild(o); });
+    if (listEl) {
+      listEl.innerHTML = others.map(r => {
+        const ready = r.total_cards >= 10;
+        const cardLabel = ready
+          ? `<span style="color:var(--green)">✓ ${r.total_cards} cards</span>`
+          : `<span style="color:var(--red)">✗ ${r.total_cards} cards (needs 10)</span>`;
+        const rowStyle = ready
+          ? 'cursor:pointer;padding:10px 12px;border-radius:6px;margin-bottom:6px;border:1px solid var(--dim);display:flex;justify-content:space-between;align-items:center;background:rgba(0,245,255,.03)'
+          : 'padding:10px 12px;border-radius:6px;margin-bottom:6px;border:1px solid rgba(255,34,85,.2);display:flex;justify-content:space-between;align-items:center;opacity:.5';
+        const btn = ready
+          ? `<button class="btn btn-buy btn-sm" onclick="document.getElementById('challengeTargetInput').value='${r.username}';document.getElementById('challengeBetInput').focus()">Select</button>`
+          : `<span style="font-size:.75rem;color:var(--dim)">Not ready</span>`;
+        return `<div style="${rowStyle}">
+          <div>
+            <span style="color:var(--cyan);font-size:1rem">${r.username}</span>
+            <span style="color:var(--dim);font-size:.78rem;margin-left:8px">₳${r.arm_bucks.toFixed(2)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:.8rem">${cardLabel}${btn}</div>
+        </div>`;
+      }).join('');
+    }
   });
 }
 
