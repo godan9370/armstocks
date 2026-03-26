@@ -600,6 +600,13 @@ def save(data):
         print("  [DB] save SKIPPED — market is DB_UNAVAILABLE stub")
         return
     payload = json.dumps(data, default=str)
+    n_users = len(data.get('users', {}))
+    # Sample first user's arm_bucks for read-back verification
+    sample_uid, sample_bucks = None, None
+    for uid, u in data.get('users', {}).items():
+        sample_uid   = uid
+        sample_bucks = round(u.get('arm_bucks', 0), 4)
+        break
     conn = _get_db_conn()
     if conn:
         try:
@@ -611,7 +618,21 @@ def save(data):
             """, (payload,))
             conn.commit()
             cur.close()
-            print(f"  [DB] save OK — users={len(data.get('users',{}))}")
+            # ── Read-back verification ──
+            try:
+                vcur = conn.cursor()
+                vcur.execute("SELECT data FROM market_state WHERE id = 1;")
+                vrow = vcur.fetchone()
+                vcur.close()
+                if vrow:
+                    vdata   = json.loads(vrow[0])
+                    vbucks  = round(vdata.get('users', {}).get(sample_uid, {}).get('arm_bucks', -1), 4) if sample_uid else '?'
+                    match   = "✓ MATCH" if vbucks == sample_bucks else f"✗ MISMATCH (wrote {sample_bucks}, read back {vbucks})"
+                    print(f"  [DB] save OK — users={n_users}  verify={match}")
+                else:
+                    print(f"  [DB] save OK — users={n_users}  verify=NO_ROW_FOUND")
+            except Exception as ve:
+                print(f"  [DB] save OK — users={n_users}  verify-read error: {ve}")
         except Exception as e:
             print(f"  [DB] save ERROR: {e}")
         finally:
@@ -695,16 +716,30 @@ def init_market():
             "_db_unavailable": True,
         }
     if existing:
+        # Strip any accidentally-persisted _db_unavailable flag
+        existing.pop("_db_unavailable", None)
         # Back-compat: add new top-level keys if missing
-        if "predictions"        not in existing: existing["predictions"]        = []
-        if "shiny_registry"     not in existing: existing["shiny_registry"]     = {}
-        if "etf_dividends_paid" not in existing: existing["etf_dividends_paid"] = 0.0
-        if "shiny_listings"     not in existing: existing["shiny_listings"]     = []
-        if "battles"            not in existing: existing["battles"]            = []
+        new_keys_added = False
+        for key, default in [
+            ("predictions",        []),
+            ("shiny_registry",     {}),
+            ("etf_dividends_paid", 0.0),
+            ("shiny_listings",     []),
+            ("battles",            []),
+            ("radio_playlist",     ""),
+        ]:
+            if key not in existing:
+                existing[key] = default
+                new_keys_added = True
         # Force trading phase — IPO phase is removed
         existing["phase"] = "trading"
-        if "radio_playlist"     not in existing: existing["radio_playlist"]     = ""
-        save(existing)   # persist any new keys immediately
+        # Only save back to DB if we actually added new keys — avoids racing with
+        # the old instance which may still be serving requests during a blue-green deploy
+        if new_keys_added:
+            print("  [DB] Back-compat keys added — saving updated schema to DB")
+            save(existing)
+        else:
+            print("  [DB] No schema changes — skipping startup save to preserve in-flight writes")
         return existing
 
     # Build a deduplicated name→filename map (prefer .jpg/.jpeg over .png/others)
