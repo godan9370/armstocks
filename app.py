@@ -733,6 +733,11 @@ def init_market():
                 new_keys_added = True
         # Force trading phase — IPO phase is removed
         existing["phase"] = "trading"
+        # Trim bloated price_history on load — clears any pre-existing buildup in the DB
+        for s in existing.get("stocks", {}).values():
+            if len(s.get("price_history", [])) > 100:
+                s["price_history"] = s["price_history"][-100:]
+                new_keys_added = True  # trigger a save so the trimmed version persists
         # Only save back to DB if we actually added new keys — avoids racing with
         # the old instance which may still be serving requests during a blue-green deploy
         if new_keys_added:
@@ -2534,7 +2539,7 @@ def background_loop():
     global market
     _tick = 0
     while True:
-        time.sleep(15)   # tick every 15s; full market tasks run every 4th tick (60s)
+        time.sleep(30)   # tick every 30s; save every 2nd tick (60s)
         _tick += 1
         try:
             with lock:
@@ -2545,48 +2550,27 @@ def background_loop():
                     if recovered and recovered != "DB_UNAVAILABLE":
                         print(f"  [DB] Recovery SUCCESS — reloaded market with {len(recovered.get('users',{}))} users")
                         market = recovered
-                        # Add any missing keys
                         if "battles" not in market: market["battles"] = []
                         if "radio_playlist" not in market: market["radio_playlist"] = ""
                         market["phase"] = "trading"
                     else:
                         print("  [DB] Recovery failed — still unavailable")
-                    # Don't run other background tasks if still in stub mode
                     if market.get("_db_unavailable"):
                         continue
 
                 n = datetime.utcnow()
 
-                # ── Futures settlement ──
-                for uid, u in market["users"].items():
-                    _ensure_user_fields(u)
-                    for contract in u["futures"]:
-                        if contract["status"] != "active":
-                            continue
-                        if n >= datetime.fromisoformat(contract["expires_at"]):
-                            s   = market["stocks"].get(contract["ticker"])
-                            if s:
-                                cur  = s["current_price"]
-                                won  = (contract["direction"] == "UP"   and cur > contract["entry_price"]) or \
-                                       (contract["direction"] == "DOWN" and cur < contract["entry_price"])
-                                contract["status"]        = "won" if won else "lost"
-                                contract["settled_price"] = round(cur, 4)
-                                contract["settled_at"]    = n.isoformat()
-                                contract["payout"]        = FUTURES_PAYOUT if won else 0.0
-                                if won:
-                                    u["arm_bucks"] += FUTURES_PAYOUT
-                    settled = [c for c in u["futures"] if c["status"] != "active"]
-                    active  = [c for c in u["futures"] if c["status"] == "active"]
-                    u["futures"] = active + settled[-30:]
-
-                # ── Micro-fluctuation (every 60s = every 4th tick) ──
-                if _tick % 4 == 0:
+                # ── Micro-fluctuation (every 60s = every 2nd tick) ──
+                if _tick % 2 == 0:
                     for ticker, s in market["stocks"].items():
-                        micro = random.gauss(0, 0.003)   # ±0.3% std per minute
+                        micro = random.gauss(0, 0.003)
                         s["current_price"] = round(max(0.01, s["current_price"] * (1 + micro)), 4)
                         s["price_history"].append({"ts": n.isoformat(),
                                                    "price": s["current_price"],
                                                    "volume": 0, "type": "micro"})
+                        # Keep price history lean — only last 100 entries per stock
+                        if len(s["price_history"]) > 100:
+                            s["price_history"] = s["price_history"][-100:]
 
                 # ── Larger random drift (every DRIFT_INTERVAL seconds) ──
                 last_drift = datetime.fromisoformat(market.get("last_drift", n.isoformat()))
@@ -2597,6 +2581,8 @@ def background_loop():
                         s["price_history"].append({"ts": n.isoformat(),
                                                    "price": s["current_price"],
                                                    "volume": 0, "type": "drift"})
+                        if len(s["price_history"]) > 100:
+                            s["price_history"] = s["price_history"][-100:]
                     market["last_drift"] = n.isoformat()
 
                 # ── Stock & ETF Dividends (hourly) ──
@@ -2604,13 +2590,11 @@ def background_loop():
                 if (n - last_div).total_seconds() >= DIV_INTERVAL:
                     for uid, u in market["users"].items():
                         _ensure_user_fields(u)
-                        # Stock dividends (only on profitable stocks)
                         for ticker, shares in u.get("portfolio", {}).items():
                             if shares > 0 and ticker in market["stocks"]:
                                 s = market["stocks"][ticker]
                                 if s["current_price"] > s["ipo_price"]:
                                     u["arm_bucks"] += shares * s["current_price"] * 0.001
-                        # ETF dividends — rate scales with fund performance
                         for fund_id, units in u.get("etf_portfolio", {}).items():
                             if units <= 0: continue
                             nav        = compute_etf_nav(fund_id)
@@ -2620,7 +2604,15 @@ def background_loop():
                             u["arm_bucks"] += round(units * nav * div_rate, 4)
                     market["last_dividend"] = n.isoformat()
 
-                save(market)
+                # ── Trim battles list to avoid unbounded growth ──
+                if len(market.get("battles", [])) > 200:
+                    completed = [b for b in market["battles"] if b.get("status") == "finished"]
+                    active    = [b for b in market["battles"] if b.get("status") != "finished"]
+                    market["battles"] = active + completed[-50:]
+
+                # ── Save every 2nd tick (60s) ──
+                if _tick % 2 == 0:
+                    save(market)
         except Exception as e:
             print(f"  [BG] error: {e}")
 
