@@ -3,7 +3,7 @@
 """
 
 from flask import Flask, request, jsonify, send_from_directory, render_template
-import json, os, random, threading, time, uuid, requests as http_requests
+import atexit, json, os, random, signal, sys, threading, time, uuid, requests as http_requests
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -2622,6 +2622,32 @@ def background_loop():
 # ─────────────────────────── STARTUP ──────────────────────────
 market = init_market()
 threading.Thread(target=background_loop, daemon=True).start()
+
+# ── Graceful shutdown save ──────────────────────────────────────
+# Gunicorn sends SIGTERM when a new deploy starts. We intercept it to
+# flush the current in-memory market to DB *before* the new instance
+# loads — eliminating the race where the new instance loads stale data.
+def _shutdown_save():
+    sys.stdout.flush()
+    print("  [DB] Shutdown triggered — saving market state before exit…", flush=True)
+    try:
+        with lock:
+            if market and not market.get("_db_unavailable"):
+                save(market)
+                print("  [DB] Shutdown save complete.", flush=True)
+            else:
+                print("  [DB] Shutdown save skipped (stub/unavailable).", flush=True)
+    except Exception as e:
+        print(f"  [DB] Shutdown save error: {e}", flush=True)
+
+def _sigterm_handler(signum, frame):
+    _shutdown_save()
+    # Restore default and re-raise so gunicorn can finish its graceful shutdown
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    os.kill(os.getpid(), signal.SIGTERM)
+
+signal.signal(signal.SIGTERM, _sigterm_handler)
+atexit.register(_shutdown_save)  # also catches normal exits
 
 # ─────────────────────────── MAIN ─────────────────────────────
 if __name__ == "__main__":
