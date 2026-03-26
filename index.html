@@ -3129,8 +3129,8 @@ function openChallengeModal(preselect) {
     </div>
     <button class="btn btn-buy" style="width:100%;font-size:1.2rem" onclick="sendChallenge()">⚔ SEND CHALLENGE</button>
   </div>`;
-  document.getElementById('tradeModalBody').innerHTML = html;
-  document.getElementById('tradeModal').classList.add('open');
+  document.getElementById('stockModalContent').innerHTML = html;
+  document.getElementById('stockModal').classList.add('open');
   if (preselect) document.getElementById('challengeTargetInput').value = preselect;
   // Fetch players and build clickable list
   fetch('/api/leaderboard').then(r=>r.json()).then(rows=>{
@@ -3175,7 +3175,7 @@ async function sendChallenge() {
     body: JSON.stringify({user_id: userId, target_username: target, bet: isNaN(bet)?0:bet})});
   const d = await r.json();
   if (d.error) { toast(d.error, 'err'); return; }
-  document.getElementById('tradeModal').classList.remove('open');
+  document.getElementById('stockModal').classList.remove('open');
   toast(`Challenge sent to ${target}! ₳${(isNaN(bet)?0:bet).toFixed(2)} locked.`);
   fetchBattleList();
   armBucks -= (isNaN(bet)?0:bet);
